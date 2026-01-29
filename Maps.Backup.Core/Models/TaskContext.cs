@@ -11,6 +11,6 @@ namespace Maps.Backup.Core.Models
     {
         public List<IWorkTaskNode> Nodes = new List<IWorkTaskNode>();
 
-        public Dictionary<string, TaskNodeResult> NodeReusltList = new Dictionary<string, TaskNodeResult>(); 
+        public Dictionary<string, TaskNodeResult> NodeResultList = new Dictionary<string, TaskNodeResult>(); 
     }
 }

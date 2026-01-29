@@ -69,7 +69,7 @@ namespace Maps.Backup.Core
                 {
                     break;
                 }
-                context.NodeReusltList[taskNode.TaskId] = nodeResult;
+                context.NodeResultList[taskNode.TaskId] = nodeResult;
                 OnTaskNodeExecuted?.Invoke(taskNode, nodeResult);
             }
         }
