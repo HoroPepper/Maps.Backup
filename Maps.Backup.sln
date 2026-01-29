@@ -5,8 +5,6 @@ VisualStudioVersion = 17.14.36414.22 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maps.Backup.Core", "Maps.Backup.Core\Maps.Backup.Core.csproj", "{073D37AE-4180-4FDD-AAE4-1B1C448DAFC1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maps.Backup.Test", "Maps.Backup.Test\Maps.Backup.Test.csproj", "{B5112920-1CE8-42CA-AD2B-7985CBC2DEF7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{073D37AE-4180-4FDD-AAE4-1B1C448DAFC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{073D37AE-4180-4FDD-AAE4-1B1C448DAFC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{073D37AE-4180-4FDD-AAE4-1B1C448DAFC1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B5112920-1CE8-42CA-AD2B-7985CBC2DEF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B5112920-1CE8-42CA-AD2B-7985CBC2DEF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B5112920-1CE8-42CA-AD2B-7985CBC2DEF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B5112920-1CE8-42CA-AD2B-7985CBC2DEF7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
