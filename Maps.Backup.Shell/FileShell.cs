@@ -14,7 +14,7 @@ namespace Maps.Backup.Shell
         public void Run()
         {
             bool isQuit = false;
-            IFileService fileService = new ShareDirFileService();
+            IFileService fileService = new WinSharedFileService();
             while (!isQuit)
             {
 

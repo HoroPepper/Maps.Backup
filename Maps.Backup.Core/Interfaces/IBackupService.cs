@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Maps.Backup.Core.Interfaces
 {
-    public interface IBackup
+    public interface IBackupService
     {
         string Restore(string targetDatabase, IFile backupFile);
 

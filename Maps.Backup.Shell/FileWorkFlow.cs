@@ -18,7 +18,7 @@ namespace Maps.Backup.Shell
             string uploadRootPath = "\\\\192.168.1.251\\ems共有\\鄭棋文";
 
             string qaDirName = $"QA{qaNo}";
-            IFileService fileService = new ShareDirFileService();
+            IFileService fileService = new WinSharedFileService();
             var files = fileService.FindFile(new Core.Models.FileSearchParam()
             {
                 RootPath = Path.Combine(downLoadRootPath, qaDirName)

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Maps.Backup.Core.Impls
 {
-    public class ShareDirFileService : IFileService
+    public class WinSharedFileService : IFileService
     {
         public IFile Download(IFile remoteFile, IFile saveFile)
         {
@@ -39,7 +39,7 @@ namespace Maps.Backup.Core.Impls
                 File.Copy(remoteFile.Path, localSavePath, true);
 
                 // 4. 返回填充实时属性的本地文件对象，返回补全后的路径
-                return new FileModel { Path = localSavePath };
+                return new LocalFile(localSavePath);
             }
             catch (Exception ex)
             {
@@ -95,7 +95,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 5. 转换为IFile对象列表并返回
-                return fileQuery.Select(path => new FileModel { Path = path }).ToList<IFile>();
+                return fileQuery.Select(path => new LocalFile(path)).ToList<IFile>();
             }
             catch (Exception ex)
             {
@@ -124,7 +124,7 @@ namespace Maps.Backup.Core.Impls
                 ZipFile.ExtractToDirectory(zipFile.Path, extractDir, true);
 
                 // 返回解压后的目录对象
-                return new FileModel { Path = extractDir };
+                return new LocalFile(extractDir);
             }
             catch (Exception ex)
             {
@@ -161,7 +161,7 @@ namespace Maps.Backup.Core.Impls
                 File.Copy(localFile.Path, remoteTargetPath, true);
 
                 // 4. 返回填充实时属性的远程文件对象，返回实际上传的路径
-                return new FileModel { Path = remoteTargetPath };
+                return new WinSharedDirFile(remoteTargetPath, targetFile.Location);
             }
             catch (Exception ex)
             {

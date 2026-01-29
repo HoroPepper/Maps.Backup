@@ -56,7 +56,9 @@ namespace Maps.Backup.Core
             _taskNodes.Clear();
         }
 
-        public event Action<IWorkTaskNode,TaskNodeResult> OnTaskNodeExecuted;
+        public event Action<TaskContext> AfterTaskNodeExecuted;
+
+        public event Action<TaskContext,IWorkTaskNode> BeforeTaskNodeExecuted;
 
         public void ExecuteAllTasks(object param)
         {
@@ -64,13 +66,20 @@ namespace Maps.Backup.Core
             context.Nodes = GetAllTaskNodes();
             foreach (var taskNode in _taskNodes)
             {
-                var nodeResult = taskNode.Execute(param, context);
-                if (nodeResult == null || !nodeResult.IsSuccess)
+                if(taskNode == null)
+                {
+                    continue;
+                }
+                BeforeTaskNodeExecuted?.Invoke(context, taskNode);
+                var nodeResult = taskNode.Execute(context);
+                context.LastTaskNode = taskNode;
+                context.LastTaskResult = nodeResult;
+                context.NodeResultList[taskNode.TaskId] = nodeResult;
+                if (context.LastTaskResult == null || !context.LastTaskResult.IsSuccess)
                 {
                     break;
                 }
-                context.NodeResultList[taskNode.TaskId] = nodeResult;
-                OnTaskNodeExecuted?.Invoke(taskNode, nodeResult);
+                AfterTaskNodeExecuted?.Invoke(context);
             }
         }
     }

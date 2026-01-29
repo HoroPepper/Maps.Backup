@@ -8,13 +8,17 @@ namespace Maps.Backup.Core.Interfaces
 {
     public interface IFile
     {
-        string Location { get; set; }
+        string Location { get; }
 
-        string Path { get; set; }
+        string LocationType { get; }
 
-        string FileType { get; set; }
+        string Path { get; }
 
-        string FileName { get; set; }
+        string FileType { get; }
+
+        string FileName { get; }
+
+        bool IsDirectory { get; }
 
     }
 }

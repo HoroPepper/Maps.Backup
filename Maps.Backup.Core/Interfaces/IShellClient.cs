@@ -23,5 +23,9 @@ namespace Maps.Backup.Core.Interfaces
         /// <param name="afterExecuted">执行后回调方法，参数为命令执行结果</param>
         void Execute(string command, Action<ShellExecuteResult> afterExecuted);
 
+        void SetEnvironmentVar(string key, string value);
+
+        string GetEnvironmentVar(string key);
+
     }
 }
