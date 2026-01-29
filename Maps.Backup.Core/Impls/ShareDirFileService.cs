@@ -48,25 +48,54 @@ namespace Maps.Backup.Core.Impls
             }
         }
 
-        public List<IFile> FindFileByExtension(FileSearchParam searchParam)
+        public List<IFile> FindFile(FileSearchParam searchParam)
         {
             try
             {
-                // 校验搜索根路径
-                if (!Directory.Exists(searchParam.RootPath))
-                    throw new DirectoryNotFoundException("搜索根路径不存在", new Exception(searchParam.RootPath));
+                // 1. 校验搜索根路径（空路径直接抛异常）
+                if (string.IsNullOrWhiteSpace(searchParam.RootPath) || !Directory.Exists(searchParam.RootPath))
+                    throw new DirectoryNotFoundException("搜索根路径不存在或为空", new Exception(searchParam.RootPath ?? "空路径"));
 
-                // 搜索选项：是否递归
+                // 2. 设置搜索选项：是否递归子目录
                 var searchOption = searchParam.IsRecursive
                     ? SearchOption.AllDirectories
                     : SearchOption.TopDirectoryOnly;
 
-                // 遍历所有文件，筛选符合扩展名的文件
-                var filePaths = Directory.EnumerateFiles(searchParam.RootPath, "*.*", searchOption)
-                    .Where(path => searchParam.FileType == Path.GetExtension(path).ToLower());
+                // 3. 基础查询：获取根路径下所有文件的完整路径
+                var fileQuery = Directory.EnumerateFiles(searchParam.RootPath, "*.*", searchOption).AsQueryable();
 
-                // 转换为IFile对象列表并返回
-                return filePaths.Select(path => new FileModel { Path = path }).ToList<IFile>();
+                // 4. 叠加AND筛选条件：所有非空参数均需满足，空参数忽略
+                // 条件1：文件全称匹配（FullName非空时，匹配「文件名.扩展名」完整名称）
+                if (!string.IsNullOrWhiteSpace(searchParam.FullName))
+                {
+                    fileQuery = fileQuery.Where(path =>
+                        Path.GetFileName(path).Equals(searchParam.FullName, StringComparison.OrdinalIgnoreCase));
+                }
+                // 条件2：文件名前缀匹配（Prefix非空时，文件名以指定前缀开头，忽略大小写）
+                else if (!string.IsNullOrWhiteSpace(searchParam.Prefix))
+                {
+                    fileQuery = fileQuery.Where(path =>
+                        Path.GetFileNameWithoutExtension(path).StartsWith(searchParam.Prefix, StringComparison.OrdinalIgnoreCase));
+                }
+                // 条件3：文件名后缀匹配（Suffix非空时，文件名（不含扩展名）以指定后缀结尾，忽略大小写）
+                if (!string.IsNullOrWhiteSpace(searchParam.Suffix))
+                {
+                    fileQuery = fileQuery.Where(path =>
+                        Path.GetFileNameWithoutExtension(path).EndsWith(searchParam.Suffix, StringComparison.OrdinalIgnoreCase));
+                }
+                // 条件4：文件扩展名匹配（FileType非空时，匹配扩展名，自动补全.，忽略大小写）
+                if (!string.IsNullOrWhiteSpace(searchParam.FileType))
+                {
+                    // 统一扩展名格式：确保以.开头，避免传入txt和.txt的差异
+                    var extension = searchParam.FileType.StartsWith(".")
+                        ? searchParam.FileType
+                        : $".{searchParam.FileType}";
+                    fileQuery = fileQuery.Where(path =>
+                        Path.GetExtension(path).Equals(extension, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // 5. 转换为IFile对象列表并返回
+                return fileQuery.Select(path => new FileModel { Path = path }).ToList<IFile>();
             }
             catch (Exception ex)
             {
