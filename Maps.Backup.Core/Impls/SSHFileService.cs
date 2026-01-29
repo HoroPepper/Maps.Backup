@@ -225,49 +225,6 @@ namespace Maps.Backup.Core.Impls
         }
 
         /// <summary>
-        /// 解压SSH远程服务器上的ZIP文件（远程解压，避免本地中转）
-        /// 兼容：目标路径为目录，自动创建多级目录
-        /// </summary>
-        public IFile Unzip(IFile zipFile, IFile targetExtractFile)
-        {
-            try
-            {
-                EnsureConnectionOpen();
-                string remoteZipPath = zipFile.Path.Replace('\\', '/');
-                string extractDir = targetExtractFile.Path.Replace('\\', '/');
-
-                // 1. 校验远程ZIP文件（存在且非目录）
-                if (!_sftpClient.Exists(remoteZipPath) || IsRemoteDirectory(remoteZipPath))
-                {
-                    throw new FileNotFoundException("SSH远程ZIP文件不存在或为目录", remoteZipPath);
-                }
-
-                // 2. 创建远程解压目标目录（递归创建多级目录）
-                CreateRemoteDirectory(extractDir);
-
-                // 3. 执行SSH远程命令解压ZIP（Linux服务器默认支持unzip命令）
-                // 命令说明：-o 覆盖已存在文件，-d 指定解压目录
-                string unzipCommand = $"unzip -o \"{remoteZipPath}\" -d \"{extractDir}\"";
-                var commandResult = _sshClient.RunCommand(unzipCommand);
-
-                // 4. 校验解压命令执行结果
-                if (commandResult.ExitStatus != 0)
-                {
-                    throw new InvalidOperationException(
-                        $"SSH远程解压命令执行失败，错误信息：{commandResult.Error}，命令：{unzipCommand}");
-                }
-
-                // 5. 返回解压后的远程目录对象
-                return new LocalFile(extractDir);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException(
-                    $"SSH文件解压失败：ZIP路径={zipFile.Path}，目标路径={targetExtractFile.Path}", ex);
-            }
-        }
-
-        /// <summary>
         /// 从本地上传文件到SSH远程服务器
         /// 兼容：远程路径为目录时，自动补全本地文件名
         /// </summary>

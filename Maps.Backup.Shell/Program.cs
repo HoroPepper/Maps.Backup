@@ -14,6 +14,7 @@ namespace Maps.Backup.Shell
             bool isQuit = false;
             IFileService backUpFileService = new WinSharedFileService();
             IFileService dbFileService = new SSHFileService("111");
+            IZipService zipService = new ZipFileService();
             IShellClient shellClient = new RemotePGShellClient("1", 1, "1", "1", "1", "1");
             IBackupService backupService = new PGBackupService(shellClient);
 
@@ -70,7 +71,7 @@ namespace Maps.Backup.Shell
                                 {
                                     if(file.FileType == "zip")
                                     {
-                                        backUpFileService.Unzip(file, new LocalFile(localSaveDir));
+                                        zipService.Unzip(file, new LocalFile(localSaveDir));
                                     }
                                 }
                                 return new TaskNodeResult()

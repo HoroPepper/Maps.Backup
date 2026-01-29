@@ -26,14 +26,6 @@ namespace Maps.Backup.Core.Interfaces
         IFile Upload(IFile localFile, IFile targetFile);
 
         /// <summary>
-        /// 解压压缩文件到指定目标路径
-        /// </summary>
-        /// <param name="zipFilePath">压缩文件完整路径（如.zip/.7z/.rar）</param>
-        /// <param name="targetExtractPath">解压目标目录路径（不存在则自动创建）</param>
-        /// <returns>解压后的实际目录路径</returns>
-        IFile Unzip(IFile zipFile, IFile targetExtractFile);
-
-        /// <summary>
         /// 按文件后缀查找文件
         /// </summary>
         /// <param name="searchParam">查询参数</param>
