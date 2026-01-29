@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Maps.Backup.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,6 @@ namespace Maps.Backup.Core.Interfaces
 
         string TaskType { get; set; }
 
-        string Execute(object param);
+        string Execute(object param, TaskContext context);
     }
 }
