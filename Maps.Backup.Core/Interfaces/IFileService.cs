@@ -38,7 +38,7 @@ namespace Maps.Backup.Core.Interfaces
         /// </summary>
         /// <param name="searchParam">查询参数</param>
         /// <returns>符合条件的文件完整路径列表，无结果则返回空列表（非null）</returns>
-        List<IFile> FindFileByExtension(FileSearchParam searchParam);
+        List<IFile> FindFile(FileSearchParam searchParam);
 
     }
 }

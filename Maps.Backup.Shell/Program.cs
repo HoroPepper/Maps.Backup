@@ -8,8 +8,8 @@ namespace Maps.Backup.Shell
     {
         static void Main(string[] args)
         {
-            FileShell shell = new FileShell();
-            shell.Run();
+            FileWorkFlow fileWorkFlow = new FileWorkFlow();
+            fileWorkFlow.Execute(Console.ReadLine());
         }
     }
 }
