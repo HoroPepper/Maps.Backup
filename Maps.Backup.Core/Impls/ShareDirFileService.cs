@@ -16,19 +16,30 @@ namespace Maps.Backup.Core.Impls
         {
             try
             {
+                // 1. 校验远程源文件是否存在
+                
                 if (!File.Exists(remoteFile.Path))
                     throw new FileNotFoundException("远程文件不存在", remoteFile.Path);
 
-                // 获取本地保存目录，不存在则创建
-                var saveDir = Path.GetDirectoryName(saveFile.Path);
+                // 核心修复：提取源文件的文件名，补全本地保存的文件路径
+                string sourceFileName = Path.GetFileName(remoteFile.Path); // 拿到源文件的完整文件名（如test.txt、demo.jpg）
+                string localSavePath = saveFile.Path;
+                // 判断如果传入的本地路径是目录，则自动拼接源文件名，补全为文件路径
+                if (Directory.Exists(localSavePath))
+                {
+                    localSavePath = Path.Combine(localSavePath, sourceFileName);
+                }
+
+                // 2. 获取本地保存目录，不存在则创建（此时localSavePath已确保是文件路径）
+                var saveDir = Path.GetDirectoryName(localSavePath);
                 if (!Directory.Exists(saveDir))
                     Directory.CreateDirectory(saveDir);
 
-                // 复制远程文件到本地（覆盖已存在的文件）
-                File.Copy(remoteFile.Path, saveFile.Path, true);
+                // 3. 复制远程文件到本地（覆盖已存在的文件），使用补全后的文件路径
+                File.Copy(remoteFile.Path, localSavePath, true);
 
-                // 返回填充实时属性的本地文件对象
-                return new FileModel { Path = saveFile.Path };
+                // 4. 返回填充实时属性的本地文件对象，返回补全后的路径
+                return new FileModel { Path = localSavePath };
             }
             catch (Exception ex)
             {
@@ -71,18 +82,15 @@ namespace Maps.Backup.Core.Impls
                 // 校验ZIP文件
                 if (!File.Exists(zipFile.Path))
                     throw new FileNotFoundException("ZIP压缩文件不存在", zipFile.Path);
-                if (zipFile.FileType.ToLower() != ".zip")
-                    throw new ArgumentException("目标文件不是ZIP压缩文件", nameof(zipFile));
+               
 
                 // 解压目标为目录，不存在则创建（覆盖已存在的目录内容）
                 var extractDir = targetExtractFile.Path;
-                if (Directory.Exists(extractDir))
+                if (!Directory.Exists(extractDir))
                 {
-                    // 删除原有目录（避免残留文件），重新创建
-                    Directory.Delete(extractDir, true);
+                    Directory.CreateDirectory(extractDir);
                 }
-                Directory.CreateDirectory(extractDir);
-
+                
                 // 解压ZIP文件到目标目录
                 ZipFile.ExtractToDirectory(zipFile.Path, extractDir, true);
 
@@ -100,20 +108,31 @@ namespace Maps.Backup.Core.Impls
         {
             try
             {
-                // 校验本地文件是否存在
+                // 1. 校验本地源文件是否存在
                 if (!File.Exists(localFile.Path))
                     throw new FileNotFoundException("本地文件不存在", localFile.Path);
 
-                // 获取远程目标目录，不存在则创建
-                var remoteDir = Path.GetDirectoryName(targetFile.Path);
-                if (!Directory.Exists(remoteDir))
+                // 核心修复：提取本地文件名，补全远程目标路径
+                string localFileName = Path.GetFileName(localFile.Path); // 拿到本地文件的完整文件名（如test.jpg、data.csv）
+                string remoteTargetPath = targetFile.Path;
+                // 判断如果传入的远程路径是目录，则自动拼接本地文件名，补全为文件路径
+                if (Directory.Exists(remoteTargetPath))
+                {
+                    remoteTargetPath = Path.Combine(remoteTargetPath, localFileName);
+                }
+
+                // 2. 获取远程目标目录，不存在则创建（此时remoteTargetPath已确保是文件路径）
+                var remoteDir = Path.GetDirectoryName(remoteTargetPath);
+                if (!string.IsNullOrEmpty(remoteDir) && !Directory.Exists(remoteDir))
+                {
                     Directory.CreateDirectory(remoteDir);
+                }
 
-                // 复制本地文件到远程共享目录（覆盖已存在的文件）
-                File.Copy(localFile.Path, targetFile.Path, true);
+                // 3. 复制本地文件到远程共享目录（覆盖已存在的文件），使用补全后的路径
+                File.Copy(localFile.Path, remoteTargetPath, true);
 
-                // 返回填充实时属性的远程文件对象
-                return new FileModel { Path = targetFile.Path };
+                // 4. 返回填充实时属性的远程文件对象，返回实际上传的路径
+                return new FileModel { Path = remoteTargetPath };
             }
             catch (Exception ex)
             {
