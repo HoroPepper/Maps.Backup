@@ -15,6 +15,6 @@ namespace Maps.Backup.Core.Interfaces
 
         string TaskType { get; set; }
 
-        string Execute(object param, TaskContext context);
+        TaskNodeResult Execute(object param, TaskContext context);
     }
 }

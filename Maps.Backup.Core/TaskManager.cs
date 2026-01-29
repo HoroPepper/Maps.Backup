@@ -56,12 +56,21 @@ namespace Maps.Backup.Core
             _taskNodes.Clear();
         }
 
+        public event Action<IWorkTaskNode,TaskNodeResult> OnTaskNodeExecuted;
+
         public void ExecuteAllTasks(object param)
         {
             TaskContext context = new TaskContext();
+            context.Nodes = GetAllTaskNodes();
             foreach (var taskNode in _taskNodes)
             {
-                taskNode.Execute(param, context);
+                var nodeResult = taskNode.Execute(param, context);
+                if (nodeResult == null || !nodeResult.IsSuccess)
+                {
+                    break;
+                }
+                context.NodeReusltList[taskNode.TaskId] = nodeResult;
+                OnTaskNodeExecuted?.Invoke(taskNode, nodeResult);
             }
         }
     }
