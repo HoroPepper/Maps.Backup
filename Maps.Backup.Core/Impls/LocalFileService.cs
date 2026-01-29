@@ -117,7 +117,7 @@ namespace Maps.Backup.Core.Impls
 
                 File.Copy(localFile.Path, remoteTargetPath, true);
 
-                return new WinSharedDirFile(remoteTargetPath, targetFile.Location);
+                return new LocalFile(remoteTargetPath);
             }
             catch (Exception ex)
             {
