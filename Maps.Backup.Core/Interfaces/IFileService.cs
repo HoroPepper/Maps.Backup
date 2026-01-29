@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Maps.Backup.Core.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -35,11 +36,9 @@ namespace Maps.Backup.Core.Interfaces
         /// <summary>
         /// 按文件后缀查找文件
         /// </summary>
-        /// <param name="rootPath">查找根目录</param>
-        /// <param name="fileExtension">文件后缀（建议带点，如.txt/.cs，无点则自动补全）</param>
-        /// <param name="recursive">是否递归查找子目录</param>
+        /// <param name="searchParam">查询参数</param>
         /// <returns>符合条件的文件完整路径列表，无结果则返回空列表（非null）</returns>
-        List<string> FindFileByExtension(string rootPath, string fileExtension, bool recursive);
+        List<string> FindFileByExtension(FileSearchParam searchParam);
 
     }
 }
