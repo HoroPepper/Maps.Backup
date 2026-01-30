@@ -21,12 +21,12 @@ namespace Maps.Backup.Core.Impls
                 string sourceFileName = Path.GetFileName(remoteFile.Path); 
                 string localSavePath = saveFile.Path;
 
-                if (Directory.Exists(localSavePath))
+                if (saveFile.IsDirectory)
                 {
                     localSavePath = Path.Combine(localSavePath, sourceFileName);
                 }
 
-                var saveDir = Path.GetDirectoryName(localSavePath);
+                var saveDir = saveFile.Path;
                 if (!Directory.Exists(saveDir))
                     Directory.CreateDirectory(saveDir);
 

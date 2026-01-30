@@ -25,8 +25,8 @@ namespace Maps.Backup.WorkFlowLib
 
             taskManager.AddTaskNode(CreateBackupDownTaskNode());
             taskManager.AddTaskNode(CreateUnZipTaskNode());
-            taskManager.AddTaskNode(CreateBackupUpTaskNode());
-            taskManager.AddTaskNode(CreateBackupRestoreTaskNode());
+            //taskManager.AddTaskNode(CreateBackupUpTaskNode());
+            //taskManager.AddTaskNode(CreateBackupRestoreTaskNode());
 
             return taskManager;
 
@@ -39,19 +39,19 @@ namespace Maps.Backup.WorkFlowLib
             targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
             {
                 RootPath = backUpDir,
-                FileType = "dump",
+                FileType = ".dump",
                 IsRecursive = true,
             }));
             targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
             {
                 RootPath = backUpDir,
-                FileType = "zip",
+                FileType = ".zip",
                 IsRecursive = true,
             }));
             targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
             {
                 RootPath = backUpDir,
-                FileType = "backup",
+                FileType = ".backup",
                 IsRecursive = true,
             }));
 
@@ -108,9 +108,9 @@ namespace Maps.Backup.WorkFlowLib
                             List<IFile> unzipFiles = new List<IFile>();
                             foreach (var file in files)
                             {
-                                if (file.FileType == "zip" || file.FileType == "rar")
+                                if (file.FileType == ".zip" || file.FileType == ".rar")
                                 {
-                                    unzipFiles.Add(zipService.Unzip(file, new LocalFile(localSaveDir)));
+                                    unzipFiles.AddRange(zipService.Unzip(file, new LocalFile(localSaveDir)));
                                 }
                             }
                             return new TaskNodeResult()
@@ -152,7 +152,13 @@ namespace Maps.Backup.WorkFlowLib
                     upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
                     {
                         RootPath = localSaveDir,
-                        FileType = "dump",
+                        FileType = ".dump",
+                        IsRecursive = true,
+                    }));
+                    upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
+                    {
+                        RootPath = localSaveDir,
+                        FileType = ".backup",
                         IsRecursive = true,
                     }));
 

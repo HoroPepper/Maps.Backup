@@ -25,13 +25,13 @@ namespace Maps.Backup.Core.Impls
                 string sourceFileName = Path.GetFileName(remoteFile.Path); // 拿到源文件的完整文件名（如test.txt、demo.jpg）
                 string localSavePath = saveFile.Path;
                 // 判断如果传入的本地路径是目录，则自动拼接源文件名，补全为文件路径
-                if (Directory.Exists(localSavePath))
+                if (saveFile.IsDirectory)
                 {
                     localSavePath = Path.Combine(localSavePath, sourceFileName);
                 }
 
                 // 2. 获取本地保存目录，不存在则创建（此时localSavePath已确保是文件路径）
-                var saveDir = Path.GetDirectoryName(localSavePath);
+                var saveDir = saveFile.Path;
                 if (!Directory.Exists(saveDir))
                     Directory.CreateDirectory(saveDir);
 
