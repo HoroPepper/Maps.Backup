@@ -25,7 +25,7 @@ namespace Maps.Backup.WorkFlowLib
 
             taskManager.AddTaskNode(CreateBackupDownTaskNode());
             taskManager.AddTaskNode(CreateUnZipTaskNode());
-            //taskManager.AddTaskNode(CreateBackupUpTaskNode());
+            taskManager.AddTaskNode(CreateBackupUpTaskNode());
             //taskManager.AddTaskNode(CreateBackupRestoreTaskNode());
 
             return taskManager;
