@@ -60,26 +60,32 @@ namespace Maps.Backup.Core
 
         public event Action<TaskContext,IWorkTaskNode> BeforeTaskNodeExecuted;
 
-        public void ExecuteAllTasks(object param)
+        public void ExecuteAllTasks(object param,TaskContext context)
         {
-            TaskContext context = new TaskContext();
             context.Nodes = GetAllTaskNodes();
-            foreach (var taskNode in _taskNodes)
+            foreach (var taskNode in context.Nodes)
             {
                 if(taskNode == null)
                 {
                     continue;
                 }
-                BeforeTaskNodeExecuted?.Invoke(context, taskNode);
-                var nodeResult = taskNode.Execute(context);
-                context.LastTaskNode = taskNode;
-                context.LastTaskResult = nodeResult;
-                context.NodeResultList[taskNode.TaskId] = nodeResult;
-                if (context.LastTaskResult == null || !context.LastTaskResult.IsSuccess)
+                try
+                {
+                    BeforeTaskNodeExecuted?.Invoke(context, taskNode);
+                    var nodeResult = taskNode.Execute(context);
+                    context.LastTaskNode = taskNode;
+                    context.LastTaskResult = nodeResult;
+                    context.NodeResultList[taskNode.TaskId] = nodeResult;
+                    if (context.LastTaskResult == null || !context.LastTaskResult.IsSuccess)
+                    {
+                        break;
+                    }
+                    AfterTaskNodeExecuted?.Invoke(context);
+                }
+                catch(Exception ex)
                 {
                     break;
                 }
-                AfterTaskNodeExecuted?.Invoke(context);
             }
         }
     }
