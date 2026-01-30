@@ -29,7 +29,7 @@ namespace Maps.Backup.WorkFlowLib
             taskManager.AddTaskNode(CreateBackupDownTaskNode());
             taskManager.AddTaskNode(CreateUnZipTaskNode());
             taskManager.AddTaskNode(CreateBackupUpTaskNode());
-            //taskManager.AddTaskNode(CreateBackupRestoreTaskNode());
+            taskManager.AddTaskNode(CreateBackupRestoreTaskNode());
 
             return taskManager;
 
@@ -198,7 +198,10 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
                         string targetDbName = context.ContextDic[ContextKeyTargetDbName];
-                        IShellClient shellClient = new RemotePGShellClient("1", 1, "1", "1", "1", "1");
+                        string sshIP = context.ContextDic[ContextKeySshIP];
+                        string ssUName = context.ContextDic[ContextKeySshUName];
+                        string ssPwd = context.ContextDic[ContextKeySshPwd];
+                        IShellClient shellClient = new RemotePGShellClient(sshIP, 22, ssUName, ssPwd, "1", "1");
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
                         {
