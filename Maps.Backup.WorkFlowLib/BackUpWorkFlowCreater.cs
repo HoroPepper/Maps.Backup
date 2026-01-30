@@ -18,9 +18,12 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeyLocalSaveDir = "localSaveDir";
         public readonly string ContextKeyDbFileSaveDir = "dbFileSaveDir";
         public readonly string ContextKeyTargetDbName = "targetDbName";
+        public readonly string ContextKeyDevBackup = "devBackup";
         public readonly string ContextKeySshIP = "sshIP";
         public readonly string ContextKeySshUName = "sshUName";
         public readonly string ContextKeySshPwd = "sshPwd";
+        public readonly string ContextKeyDbUName = "dbUName";
+        public readonly string ContextKeydbPwd = "dbPwd";
 
         public TaskManager Create()
         {
@@ -192,6 +195,101 @@ namespace Maps.Backup.WorkFlowLib
                 TaskId = "backup-restore",
                 TaskName = "恢复Backup文件",
                 TaskType = "db-restore",
+                DelegateFunc = (context) =>
+                {
+                    if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
+                    {
+                        string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
+                        string targetDbName = context.ContextDic[ContextKeyTargetDbName];
+                        string sshIP = context.ContextDic[ContextKeySshIP];
+                        string ssUName = context.ContextDic[ContextKeySshUName];
+                        string ssPwd = context.ContextDic[ContextKeySshPwd];
+                        string dbUName = context.ContextDic[ContextKeyDbUName];
+                        string dbPwd = context.ContextDic[ContextKeydbPwd];
+                        IShellClient shellClient = new RemotePGShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd);
+                        IBackupService backupService = new PGBackupService(shellClient);
+                        foreach (var file in files)
+                        {
+                            backupService.Restore(targetDbName, file);
+                        }
+
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = true,
+                            Message = "backup文件恢复成功",
+                        };
+                    }
+
+                    return new TaskNodeResult()
+                    {
+                        ResultData = null,
+                        IsSuccess = false,
+                        Message = "backup文件恢复失败",
+                    };
+
+                }
+            };
+
+            return restoreNode;
+        }
+
+        private IWorkTaskNode CreateDevBackupRestoreTaskNode()
+        {
+            IWorkTaskNode restoreNode = new DelegateTaskNode()
+            {
+                TaskId = "backup-devRestore",
+                TaskName = "恢复开发环境backup文件",
+                TaskType = "db-restore",
+                DelegateFunc = (context) =>
+                {
+                    string targetDbName = context.ContextDic[ContextKeyTargetDbName];
+                    string sshIP = context.ContextDic[ContextKeySshIP];
+                    string ssUName = context.ContextDic[ContextKeySshUName];
+                    string ssPwd = context.ContextDic[ContextKeySshPwd];
+                    string devBackup = context.ContextDic[ContextKeyDevBackup];
+                    string dbUName = context.ContextDic[ContextKeyDbUName];
+                    string dbPwd = context.ContextDic[ContextKeydbPwd];
+                    IShellClient shellClient = new RemotePGShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd);
+                    IBackupService backupService = new PGBackupService(shellClient);
+                    IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
+                    List<IFile> files = fileService.FindFile(new FileSearchParam()
+                    {
+                        FullPath = devBackup,
+                    });
+                    foreach (var file in files)
+                    {
+                        backupService.Restore(targetDbName, file);
+                    }
+
+                    return new TaskNodeResult()
+                    {
+                        ResultData = null,
+                        IsSuccess = true,
+                        Message = "dev-backup文件恢复成功",
+                    };
+
+                    return new TaskNodeResult()
+                    {
+                        ResultData = null,
+                        IsSuccess = false,
+                        Message = "dev-backup文件恢复失败",
+                    };
+
+                }
+            };
+
+            return restoreNode;
+        }
+
+
+        private IWorkTaskNode CreateDBFilesUpdateTaskNode()
+        {
+            IWorkTaskNode restoreNode = new DelegateTaskNode()
+            {
+                TaskId = "backup-customerUpdate",
+                TaskName = "更新字段",
+                TaskType = "db-sql",
                 DelegateFunc = (context) =>
                 {
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
