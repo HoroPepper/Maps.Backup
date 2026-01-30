@@ -13,6 +13,12 @@ namespace Maps.Backup.WorkFlowLib
 {
     public class BackUpWorkFlowCreater
     {
+
+        public readonly string ContextKeyBackUpDir = "backUpDir";
+        public readonly string ContextKeyLocalSaveDir = "localSaveDir";
+        public readonly string ContextKeyDbFileSaveDir = "dbFileSaveDir";
+        public readonly string ContextKeyTargetDbName = "targetDbName";
+
         public TaskManager Create()
         {
             TaskManager taskManager = new TaskManager();
@@ -69,8 +75,8 @@ namespace Maps.Backup.WorkFlowLib
                 DelegateFunc = (context) =>
                 {
                     IFileService backUpFileService = new WinSharedFileService();
-                    string backUpDir = context.ContextDic["backUpDir"];
-                    string localSaveDir = context.ContextDic["localSaveDir"];
+                    string backUpDir = context.ContextDic[ContextKeyBackUpDir];
+                    string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
                     var downloadFiles = DownloadBackUpFiles(backUpFileService, backUpDir, localSaveDir);
                     return new TaskNodeResult()
                     {
@@ -96,7 +102,7 @@ namespace Maps.Backup.WorkFlowLib
                     if (context.NodeResultList.TryGetValue("backup-down", out TaskNodeResult nodeResult))
                     {
                         IZipService zipService = new ZipFileService();
-                        string localSaveDir = context.ContextDic["localSaveDir"];
+                        string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
                         if (nodeResult?.ResultData is List<IFile> files)
                         {
                             List<IFile> unzipFiles = new List<IFile>();
@@ -141,8 +147,8 @@ namespace Maps.Backup.WorkFlowLib
                     List<IFile> upLoadFiles = new List<IFile>();
                     IFileService localFileService = new LocalFileService();
                     IFileService dbFileService = new SSHFileService("111");
-                    string localSaveDir = context.ContextDic["localSaveDir"];
-                    string dbFileSaveDir = context.ContextDic["dbFileSaveDir"];
+                    string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
+                    string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
                     upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
                     {
                         RootPath = localSaveDir,
@@ -178,8 +184,8 @@ namespace Maps.Backup.WorkFlowLib
                 {
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
                     {
-                        string dbFileSaveDir = context.ContextDic["dbFileSaveDir"];
-                        string targetDbName = context.ContextDic["targetDbName"];
+                        string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
+                        string targetDbName = context.ContextDic[ContextKeyTargetDbName];
                         IShellClient shellClient = new RemotePGShellClient("1", 1, "1", "1", "1", "1");
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
