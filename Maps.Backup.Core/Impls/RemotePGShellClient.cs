@@ -63,7 +63,7 @@ namespace Maps.Backup.Core.Impls
                 // 建立SSH连接
                 if (!sshClient.IsConnected)
                     sshClient.Connect();
-
+                command = "echo 'SSH command execute success!'";
                 // 执行远程命令并获取结果
                 var commandResult = sshClient.RunCommand(command);
 
