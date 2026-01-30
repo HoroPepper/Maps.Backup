@@ -77,10 +77,6 @@ namespace Maps.Backup.Core
                     context.LastTaskResult = nodeResult;
                     context.NodeResultList[taskNode.TaskId] = nodeResult;
                     AfterTaskNodeExecuted?.Invoke(context);
-                    if (context.LastTaskResult == null || !context.LastTaskResult.IsSuccess)
-                    {
-                        break;
-                    }
                 }
                 catch(Exception ex)
                 {

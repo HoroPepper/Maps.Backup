@@ -92,6 +92,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "download",
                 DelegateFunc = (context) =>
                 {
+                    if(context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "上游任务失败",
+                        };
+                    }
                     IFileService backUpFileService = new WinSharedFileService();
                     string backUpDir = context.ContextDic[ContextKeyBackUpDir];
                     string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
@@ -117,6 +126,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "unzip",
                 DelegateFunc = (context) =>
                 {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "上游任务失败",
+                        };
+                    }
                     if (context.NodeResultList.TryGetValue("backup-down", out TaskNodeResult nodeResult))
                     {
                         IZipService zipService = new ZipFileService();
@@ -162,6 +180,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "upload",
                 DelegateFunc = (context) =>
                 {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "上游任务失败",
+                        };
+                    }
                     string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
                     string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
                     string sshIP = context.ContextDic[ContextKeySshIP];
@@ -209,6 +236,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "db-restore",
                 DelegateFunc = (context) =>
                 {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "上游任务失败",
+                        };
+                    }
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
                     {
                         string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
@@ -255,6 +291,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "db-restore",
                 DelegateFunc = (context) =>
                 {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "上游任务失败",
+                        };
+                    }
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
                     string sshIP = context.ContextDic[ContextKeySshIP];
                     string ssUName = context.ContextDic[ContextKeySshUName];
@@ -304,6 +349,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "db-sql",
                 DelegateFunc = (context) =>
                 {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "上游任务失败",
+                        };
+                    }
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
                     {
                         string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
