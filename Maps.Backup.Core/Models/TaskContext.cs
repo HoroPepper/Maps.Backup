@@ -18,5 +18,15 @@ namespace Maps.Backup.Core.Models
         public IWorkTaskNode LastTaskNode { get; set; }
 
         public TaskNodeResult LastTaskResult { get; set; }
+
+        public TaskFlowState FlowState { get; set; } = TaskFlowState.NotStarted;
+    }
+
+    public enum TaskFlowState
+    {
+        NotStarted,
+        Running,
+        Stoped,
+        Finished,
     }
 }

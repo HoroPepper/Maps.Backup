@@ -63,6 +63,7 @@ namespace Maps.Backup.Core
         public void ExecuteAllTasks(object param,TaskContext context)
         {
             context.Nodes = GetAllTaskNodes();
+            context.FlowState = TaskFlowState.Running;
             foreach (var taskNode in context.Nodes)
             {
                 if(taskNode == null)
@@ -71,6 +72,10 @@ namespace Maps.Backup.Core
                 }
                 try
                 {
+                    if(context.FlowState == TaskFlowState.Stoped)
+                    {
+                        break;
+                    }
                     BeforeTaskNodeExecuted?.Invoke(context, taskNode);
                     var nodeResult = taskNode.Execute(context);
                     context.LastTaskNode = taskNode;
@@ -83,6 +88,8 @@ namespace Maps.Backup.Core
                     break;
                 }
             }
+
+            context.FlowState = TaskFlowState.Finished;
         }
     }
 }
