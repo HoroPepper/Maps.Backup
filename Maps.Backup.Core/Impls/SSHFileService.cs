@@ -234,26 +234,21 @@ namespace Maps.Backup.Core.Impls
             {
                 EnsureConnectionOpen();
                 string localPath = localFile.Path;
-                string remoteTargetPath = targetFile.Path.Replace('\\', '/');
+                string remoteDirPath = targetFile.IsDirectory ? targetFile.Path.Replace('\\', '/') : Path.GetDirectoryName(targetFile.Path).Replace('\\', '/');
+                
 
                 // 1. 校验本地文件是否存在
                 if (!File.Exists(localPath))
                 {
                     throw new FileNotFoundException("本地文件不存在", localPath);
                 }
-
                 // 2. 补全远程目标路径：目录则拼接本地文件名
-                string localFileName = Path.GetFileName(localPath);
-                if (IsRemoteDirectory(remoteTargetPath))
+                
+                string localFileName = localFile.FileName + localFile.FileType;
+                string remoteTargetPath = Path.Combine(remoteDirPath, localFileName).Replace('\\', '/');
+                if (!IsRemoteDirectory(remoteDirPath))
                 {
-                    remoteTargetPath = Path.Combine(remoteTargetPath, localFileName).Replace('\\', '/');
-                }
-
-                // 3. 创建远程目标文件的上级目录（递归创建）
-                string remoteTargetDir = Path.GetDirectoryName(remoteTargetPath).Replace('\\', '/');
-                if (!string.IsNullOrEmpty(remoteTargetDir))
-                {
-                    CreateRemoteDirectory(remoteTargetDir);
+                    CreateRemoteDirectory(remoteDirPath);
                 }
 
                 // 4. SFTP上传文件：打开本地文件流，写入远程文件
@@ -263,7 +258,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 5. 返回远程文件对象（补全后的实际上传路径）
-                return new WinSharedDirFile(remoteTargetPath, targetFile.Location);
+                return new SSHFile(remoteTargetPath);
             }
             catch (Exception ex)
             {
