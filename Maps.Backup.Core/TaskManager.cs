@@ -76,11 +76,11 @@ namespace Maps.Backup.Core
                     context.LastTaskNode = taskNode;
                     context.LastTaskResult = nodeResult;
                     context.NodeResultList[taskNode.TaskId] = nodeResult;
+                    AfterTaskNodeExecuted?.Invoke(context);
                     if (context.LastTaskResult == null || !context.LastTaskResult.IsSuccess)
                     {
                         break;
                     }
-                    AfterTaskNodeExecuted?.Invoke(context);
                 }
                 catch(Exception ex)
                 {
