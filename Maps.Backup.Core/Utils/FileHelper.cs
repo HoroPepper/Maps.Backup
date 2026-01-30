@@ -38,7 +38,7 @@ namespace Maps.Backup.Core.Utils
                 if (targetDir.IsDirectory)
                 {
                     // 目标是文件夹：最终路径 = 文件夹路径 + 远程文件名
-                    finalTargetFilePath = Path.Combine(targetDir.Path, sourceFileName);
+                    finalTargetFilePath = Path.Combine(targetDir.Path, sourceFileName + sourceFile.FileType);
                     // 自动创建【目标文件夹】（如果不存在）
                     if (!Directory.Exists(targetDir.Path))
                         Directory.CreateDirectory(targetDir.Path);
