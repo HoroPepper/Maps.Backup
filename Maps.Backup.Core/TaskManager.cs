@@ -85,6 +85,10 @@ namespace Maps.Backup.Core
                 }
                 catch(Exception ex)
                 {
+                    if(context != null)
+                    {
+                        context.FlowState = TaskFlowState.Stoped;
+                    }
                     break;
                 }
             }
