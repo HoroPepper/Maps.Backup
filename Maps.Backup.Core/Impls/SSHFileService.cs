@@ -258,7 +258,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 5. 返回远程文件对象（补全后的实际上传路径）
-                return new SSHFile(remoteTargetPath);
+                return new SFTPFile(remoteTargetPath);
             }
             catch (Exception ex)
             {

@@ -20,7 +20,7 @@ namespace Maps.Backup.Core.Constatns
 
             public const string WinSharedDir = "win_shared";
 
-            public const string SSH = "ssh";
+            public const string SFTP = "sftp";
         }
     }
 }

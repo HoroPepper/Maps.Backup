@@ -10,7 +10,7 @@ namespace Maps.Backup.Core.Models
     /// SFTP/SSH远程文件/目录的抽象实现（实现IFile接口）
     /// 参照LocalFile设计规范，适配SFTP Unix风格路径
     /// </summary>
-    public class SSHFile : IFile
+    public class SFTPFile : IFile
     {
         #region 私有字段（存储属性值，仅构造函数赋值）
         /// <summary>
@@ -53,7 +53,7 @@ namespace Maps.Backup.Core.Models
         /// 自动标准化为Unix风格绝对路径，区分文件/目录
         /// </summary>
         /// <param name="sftpPath">SFTP远程路径（支持Windows/相对/绝对路径，自动标准化）</param>
-        public SSHFile(string sftpPath)
+        public SFTPFile(string sftpPath)
         {
             // 1. 基础校验：路径不能为空/空白
             if (string.IsNullOrWhiteSpace(sftpPath))
@@ -66,8 +66,8 @@ namespace Maps.Backup.Core.Models
             _isDirectory = FileHelper.IsDirectoryPath(normalizedSshPath) || normalizedSshPath.EndsWith("/");
 
             // 4. 初始化位置类型（和SystemConstants中远程类型常量匹配，建议定义为Ssh/Remote）
-            _location = SystemConstants.FileLocationType.SSH;
-            _locationType = SystemConstants.FileLocationType.SSH;
+            _location = SystemConstants.FileLocationType.SFTP;
+            _locationType = SystemConstants.FileLocationType.SFTP;
 
             // 5. 赋值标准化后的SFTP绝对路径（所有操作基于此路径，避免格式错误）
             _path = normalizedSshPath;

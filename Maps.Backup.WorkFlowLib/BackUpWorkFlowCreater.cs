@@ -171,7 +171,7 @@ namespace Maps.Backup.WorkFlowLib
                     List<IFile> result = new List<IFile>();
                     foreach (var file in upLoadFiles)
                     {
-                        result.Add(dbFileService.Upload(file, new SSHFile(dbFileSaveDir)));
+                        result.Add(dbFileService.Upload(file, new SFTPFile(dbFileSaveDir)));
                     }
                     return new TaskNodeResult()
                     {
