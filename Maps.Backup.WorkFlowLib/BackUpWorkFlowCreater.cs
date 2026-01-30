@@ -178,7 +178,7 @@ namespace Maps.Backup.WorkFlowLib
                 {
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
                     {
-                        string dbFileSaveDir = context.ContextDic["dbFileSaveDir "];
+                        string dbFileSaveDir = context.ContextDic["dbFileSaveDir"];
                         string targetDbName = context.ContextDic["targetDbName"];
                         IShellClient shellClient = new RemotePGShellClient("1", 1, "1", "1", "1", "1");
                         IBackupService backupService = new PGBackupService(shellClient);
