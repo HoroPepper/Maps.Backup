@@ -18,6 +18,9 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeyLocalSaveDir = "localSaveDir";
         public readonly string ContextKeyDbFileSaveDir = "dbFileSaveDir";
         public readonly string ContextKeyTargetDbName = "targetDbName";
+        public readonly string ContextKeySshIP = "sshIP";
+        public readonly string ContextKeySshUName = "sshUName";
+        public readonly string ContextKeySshPwd = "sshPwd";
 
         public TaskManager Create()
         {
@@ -144,11 +147,14 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "upload",
                 DelegateFunc = (context) =>
                 {
-                    List<IFile> upLoadFiles = new List<IFile>();
-                    IFileService localFileService = new LocalFileService();
-                    IFileService dbFileService = new SSHFileService("111");
                     string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
                     string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
+                    string sshIP = context.ContextDic[ContextKeySshIP];
+                    string ssUName = context.ContextDic[ContextKeySshUName];
+                    string ssPwd = context.ContextDic[ContextKeySshPwd];
+                    List<IFile> upLoadFiles = new List<IFile>();
+                    IFileService localFileService = new LocalFileService();
+                    IFileService dbFileService = new SSHFileService(sshIP,22,ssUName,ssPwd);
                     upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
                     {
                         RootPath = localSaveDir,
