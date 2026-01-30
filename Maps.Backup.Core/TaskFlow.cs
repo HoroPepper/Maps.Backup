@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Maps.Backup.Core
 {
-    public class TaskManager
+    public class TaskFlow
     {
         private List<IWorkTaskNode> _taskNodes = new List<IWorkTaskNode>();
 

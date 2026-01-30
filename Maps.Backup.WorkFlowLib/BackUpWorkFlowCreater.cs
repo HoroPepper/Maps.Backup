@@ -25,28 +25,28 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeyDbUName = "dbUName";
         public readonly string ContextKeydbPwd = "dbPwd";
 
-        public TaskManager Create()
+        public TaskFlow Create()
         {
-            TaskManager taskManager = new TaskManager();
+            TaskFlow taskFlow = new TaskFlow();
 
-            taskManager.AddTaskNode(CreateBackupDownTaskNode());
-            taskManager.AddTaskNode(CreateUnZipTaskNode());
-            taskManager.AddTaskNode(CreateBackupUpTaskNode());
-            taskManager.AddTaskNode(CreateBackupRestoreTaskNode());
+            taskFlow.AddTaskNode(CreateBackupDownTaskNode());
+            taskFlow.AddTaskNode(CreateUnZipTaskNode());
+            taskFlow.AddTaskNode(CreateBackupUpTaskNode());
+            taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
 
-            taskManager.BeforeTaskNodeExecuted += (context, node) =>
+            taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
                 Console.WriteLine($"开始执行任务节点[{node.TaskName}]...");
             };
 
-            taskManager.AfterTaskNodeExecuted += (context) =>
+            taskFlow.AfterTaskNodeExecuted += (context) =>
             {
                 if(context.LastTaskNode != null && context.LastTaskResult != null)
                 {
                     Console.WriteLine($"任务节点[{context.LastTaskNode}]执行完成，结果：{(context.LastTaskResult.IsSuccess ? "成功" : "失败")}，信息：{context.LastTaskResult.Message}");
                 }
             };
-            return taskManager;
+            return taskFlow;
 
         }
 
