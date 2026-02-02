@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Maps.Backup.Core.Impls
 {
-    public class RemotePGShellClient : IShellClient
+    public class RemotePGBatShellClient : IShellClient
     {
         private readonly string _sshHost;
         private readonly int _sshPort;
@@ -20,7 +20,7 @@ namespace Maps.Backup.Core.Impls
         private readonly string _pgUName;
         private readonly string _pgPwd;
         // 远程Windows临时目录（固定，需确保目标机该目录存在且有读写执行权限）
-        private readonly string _remoteTempDir = "/commandTemp";
+        private readonly string _tempDir = "/commandTemp";
         // 远程BAT文件的基础名称（拼接随机串避免重名）
         private readonly string _batBaseName = "PgBackup_Execute_";
 
@@ -33,7 +33,7 @@ namespace Maps.Backup.Core.Impls
         /// <param name="sshPwd">SSH登录密码</param>
         /// <param name="pgUName">PG账号</param>
         /// <param name="pgPwd">PG密码</param>
-        public RemotePGShellClient(string sshHost, int sshPort, string sshUName, string sshPwd, string pgUName, string pgPwd)
+        public RemotePGBatShellClient(string sshHost, int sshPort, string sshUName, string sshPwd, string pgUName, string pgPwd, string tempDir, string batBaseName)
         {
             _sshHost = sshHost ?? throw new ArgumentNullException(nameof(sshHost), "SSH主机地址不能为空");
             SetEnvironmentVar("sshHost", _sshHost);
@@ -47,6 +47,10 @@ namespace Maps.Backup.Core.Impls
             SetEnvironmentVar("pgUName", _pgUName);
             _pgPwd = pgPwd;
             SetEnvironmentVar("pgPwd", _pgPwd);
+
+            _tempDir = string.IsNullOrWhiteSpace(tempDir) ? _tempDir : tempDir;
+
+            _batBaseName = string.IsNullOrWhiteSpace(batBaseName) ? _batBaseName : batBaseName;
         }
 
         private Dictionary<string, string> _environmentVarDic = new Dictionary<string, string>();
@@ -67,7 +71,7 @@ namespace Maps.Backup.Core.Impls
             var result = new ShellExecuteResult();
             // 生成唯一远程BAT文件路径（随机串避免多线程执行时重名覆盖）
             var remoteBatFileName = $"{_batBaseName}{Guid.NewGuid():N}.bat";
-            var remoteBatFullPath = Path.Combine(_remoteTempDir, remoteBatFileName).Replace('\\', '/');
+            var remoteBatFullPath = Path.Combine(_tempDir, remoteBatFileName).Replace('\\', '/');
             // Windows BAT文件内容：写入传入的命令，加@echo off关闭回显，提升输出整洁度
             var batContent = $@"@echo off
 {command}";
@@ -81,9 +85,9 @@ namespace Maps.Backup.Core.Impls
                 // 步骤2：SFTP传输BAT文件（直接将字符串写入远程文件，无需本地生成物理文件）
                 using var batMemoryStream = new MemoryStream(Encoding.UTF8.GetBytes(batContent));
                 // 检查远程临时目录是否存在，不存在则创建（避免文件写入失败）
-                if (!sftpClient.Exists(_remoteTempDir))
+                if (!sftpClient.Exists(_tempDir))
                 {
-                    sftpClient.CreateDirectory(_remoteTempDir);
+                    sftpClient.CreateDirectory(_tempDir);
                 }
                 sftpClient.UploadFile(batMemoryStream, remoteBatFullPath, true);
                 result.StandardOutput += $"BAT文件传输成功，远程路径：{remoteBatFullPath}{Environment.NewLine}";

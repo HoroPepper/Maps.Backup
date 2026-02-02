@@ -336,7 +336,7 @@ namespace Maps.Backup.WorkFlowLib
                         string ssPwd = context.ContextDic[ContextKeySshPwd];
                         string dbUName = context.ContextDic[ContextKeyDbUName];
                         string dbPwd = context.ContextDic[ContextKeydbPwd];
-                        IShellClient shellClient = new RemotePGShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd);
+                        IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
                         {
@@ -389,7 +389,7 @@ namespace Maps.Backup.WorkFlowLib
                     string devBackup = context.ContextDic[ContextKeyDevBackup];
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
-                    IShellClient shellClient = new RemotePGShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd);
+                    IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
                     IBackupService backupService = new PGBackupService(shellClient);
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
                     List<IFile> files = fileService.FindFile(new FileSearchParam()
@@ -447,7 +447,7 @@ namespace Maps.Backup.WorkFlowLib
                         string sshIP = context.ContextDic[ContextKeySshIP];
                         string ssUName = context.ContextDic[ContextKeySshUName];
                         string ssPwd = context.ContextDic[ContextKeySshPwd];
-                        IShellClient shellClient = new RemotePGShellClient(sshIP, 22, ssUName, ssPwd, "1", "1");
+                        IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, "1", "1", "", "");
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
                         {
