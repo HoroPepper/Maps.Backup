@@ -19,6 +19,8 @@ namespace Maps.Backup.Core.Constatns
             public const string Local = "local";
 
             public const string WinSharedDir = "win_shared";
+
+            public const string SFTP = "sftp";
         }
     }
 }

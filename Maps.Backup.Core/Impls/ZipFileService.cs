@@ -11,7 +11,7 @@ namespace Maps.Backup.Core.Impls
 {
     public class ZipFileService : IZipService
     {
-        public IFile Unzip(IFile zipFile, IFile targetFile)
+        public List<IFile> Unzip(IFile zipFile, IFile targetFile)
         {
             try
             {
@@ -21,7 +21,7 @@ namespace Maps.Backup.Core.Impls
 
 
                 // 解压目标为目录，不存在则创建（覆盖已存在的目录内容）
-                var extractDir = targetFile.Path;
+                var extractDir = Path.Combine(targetFile.Path,zipFile.FileName);
                 if (!Directory.Exists(extractDir))
                 {
                     Directory.CreateDirectory(extractDir);
@@ -30,8 +30,13 @@ namespace Maps.Backup.Core.Impls
                 // 解压ZIP文件到目标目录
                 ZipFile.ExtractToDirectory(zipFile.Path, extractDir, true);
 
+                IFileService fileService = new LocalFileService();
                 // 返回解压后的目录对象
-                return new LocalFile(extractDir);
+                return fileService.FindFile(new FileSearchParam()
+                {
+                    RootPath = extractDir,
+                    IsRecursive = true,
+                });
             }
             catch (Exception ex)
             {

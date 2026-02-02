@@ -18,6 +18,8 @@ namespace Maps.Backup.Core.Models
         private readonly string _fileName;
         private readonly bool _isDirectory;
         private readonly string _locationType;
+        private readonly string _realPath;
+        private readonly string _fileFullName;
         #endregion
 
         #region 实现IFile接口的只读属性（仅返回私有字段值）
@@ -27,12 +29,19 @@ namespace Maps.Backup.Core.Models
         public string FileName => _fileName;
         public bool IsDirectory => _isDirectory;
         public string LocationType => _locationType;
+        public string RealPath => _realPath;
+        public string FileFullName => _fileFullName;
+
         #endregion
 
         public LocalFile(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException(nameof(path), "路径不能为空或空白！");
+            if(path.StartsWith("/"))
+            {
+                path = path.Substring(1);
+            }
 
             string normalizedPath = System.IO.Path.GetFullPath(path);
 
@@ -43,13 +52,19 @@ namespace Maps.Backup.Core.Models
 
             _path = normalizedPath;
 
+            _realPath = normalizedPath;
+
             if (!_isDirectory)
             {
+                _fileFullName = System.IO.Path.GetFileName(normalizedPath);
+
                 _fileName = System.IO.Path.GetFileNameWithoutExtension(normalizedPath);
+                
                 _fileType = System.IO.Path.GetExtension(normalizedPath);
             }
             else
             {
+                _fileFullName = new DirectoryInfo(normalizedPath).Name;
                 _fileName = new DirectoryInfo(normalizedPath).Name;
                 _fileType = string.Empty;
             }

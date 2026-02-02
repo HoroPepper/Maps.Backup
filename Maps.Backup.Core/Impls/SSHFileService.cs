@@ -110,7 +110,7 @@ namespace Maps.Backup.Core.Impls
             if (!_sftpClient.Exists(remotePath))
                 return false;
             var fileAttributes = _sftpClient.GetAttributes(remotePath);
-            return fileAttributes.IsDirectory;
+            return fileAttributes.IsDirectory || fileAttributes.IsSymbolicLink;
         }
         #endregion
 
@@ -180,7 +180,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 2. 递归/非递归遍历远程目录，获取所有文件路径
-                var allRemoteFiles = new List<string>();
+                var allRemoteFiles = new List<IFile>();
                 TraverseRemoteDirectory(rootPath, searchParam.IsRecursive, allRemoteFiles);
 
                 // 3. 转换为IQueryable，叠加AND筛选条件（与WinSharedFileService逻辑完全一致）
@@ -189,20 +189,20 @@ namespace Maps.Backup.Core.Impls
                 // 条件1：文件全称匹配（忽略大小写）
                 if (!string.IsNullOrWhiteSpace(searchParam.FullName))
                 {
-                    fileQuery = fileQuery.Where(path =>
-                        Path.GetFileName(path).Equals(searchParam.FullName, StringComparison.OrdinalIgnoreCase));
+                    fileQuery = fileQuery.Where(file =>
+                       file.FileFullName.Equals(searchParam.FullName, StringComparison.OrdinalIgnoreCase));
                 }
                 // 条件2：文件名前缀匹配（不含扩展名，忽略大小写）
                 else if (!string.IsNullOrWhiteSpace(searchParam.Prefix))
                 {
-                    fileQuery = fileQuery.Where(path =>
-                        Path.GetFileNameWithoutExtension(path).StartsWith(searchParam.Prefix, StringComparison.OrdinalIgnoreCase));
+                    fileQuery = fileQuery.Where(file =>
+                        file.FileName.StartsWith(searchParam.Prefix, StringComparison.OrdinalIgnoreCase));
                 }
                 // 条件3：文件名后缀匹配（不含扩展名，忽略大小写）
                 if (!string.IsNullOrWhiteSpace(searchParam.Suffix))
                 {
-                    fileQuery = fileQuery.Where(path =>
-                        Path.GetFileNameWithoutExtension(path).EndsWith(searchParam.Suffix, StringComparison.OrdinalIgnoreCase));
+                    fileQuery = fileQuery.Where(file =>
+                        file.FileName.EndsWith(searchParam.Suffix, StringComparison.OrdinalIgnoreCase));
                 }
                 // 条件4：扩展名匹配（自动补全.，忽略大小写）
                 if (!string.IsNullOrWhiteSpace(searchParam.FileType))
@@ -210,12 +210,12 @@ namespace Maps.Backup.Core.Impls
                     var extension = searchParam.FileType.StartsWith(".")
                         ? searchParam.FileType
                         : $".{searchParam.FileType}";
-                    fileQuery = fileQuery.Where(path =>
-                        Path.GetExtension(path).Equals(extension, StringComparison.OrdinalIgnoreCase));
+                    fileQuery = fileQuery.Where(file =>
+                        file.FileType.Equals(extension, StringComparison.OrdinalIgnoreCase));
                 }
 
                 // 4. 转换为IFile对象列表返回
-                return fileQuery.Select(path => new LocalFile(path)).ToList<IFile>();
+                return fileQuery.ToList<IFile>();
             }
             catch (Exception ex)
             {
@@ -234,26 +234,21 @@ namespace Maps.Backup.Core.Impls
             {
                 EnsureConnectionOpen();
                 string localPath = localFile.Path;
-                string remoteTargetPath = targetFile.Path.Replace('\\', '/');
+                string remoteDirPath = targetFile.IsDirectory ? targetFile.Path.Replace('\\', '/') : Path.GetDirectoryName(targetFile.Path).Replace('\\', '/');
+                
 
                 // 1. 校验本地文件是否存在
                 if (!File.Exists(localPath))
                 {
                     throw new FileNotFoundException("本地文件不存在", localPath);
                 }
-
                 // 2. 补全远程目标路径：目录则拼接本地文件名
-                string localFileName = Path.GetFileName(localPath);
-                if (IsRemoteDirectory(remoteTargetPath))
+                
+                string localFileName = localFile.FileName + localFile.FileType;
+                string remoteTargetPath = Path.Combine(remoteDirPath, localFileName).Replace('\\', '/');
+                if (!IsRemoteDirectory(remoteDirPath))
                 {
-                    remoteTargetPath = Path.Combine(remoteTargetPath, localFileName).Replace('\\', '/');
-                }
-
-                // 3. 创建远程目标文件的上级目录（递归创建）
-                string remoteTargetDir = Path.GetDirectoryName(remoteTargetPath).Replace('\\', '/');
-                if (!string.IsNullOrEmpty(remoteTargetDir))
-                {
-                    CreateRemoteDirectory(remoteTargetDir);
+                    CreateRemoteDirectory(remoteDirPath);
                 }
 
                 // 4. SFTP上传文件：打开本地文件流，写入远程文件
@@ -263,7 +258,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 5. 返回远程文件对象（补全后的实际上传路径）
-                return new WinSharedDirFile(remoteTargetPath, targetFile.Location);
+                return new SFTPFile(remoteTargetPath,false);
             }
             catch (Exception ex)
             {
@@ -280,7 +275,7 @@ namespace Maps.Backup.Core.Impls
         /// <param name="remoteDir">远程目录根路径</param>
         /// <param name="isRecursive">是否递归子目录</param>
         /// <param name="fileList">文件路径收集容器</param>
-        private void TraverseRemoteDirectory(string remoteDir, bool isRecursive, List<string> fileList)
+        private void TraverseRemoteDirectory(string remoteDir, bool isRecursive, List<IFile> fileList)
         {
             EnsureConnectionOpen();
             // 获取当前目录下的所有文件和子目录
@@ -303,7 +298,7 @@ namespace Maps.Backup.Core.Impls
                 else
                 {
                     // 收集文件路径
-                    fileList.Add(fullPath);
+                    fileList.Add(new SFTPFile(fullPath,false) { RealPath = file.FullName });
                 }
             }
         }

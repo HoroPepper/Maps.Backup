@@ -27,6 +27,7 @@ namespace Maps.Backup.Core.Impls
             var restoreCommand = BuildPgRestoreCommand(targetDatabase, backupFile);
 
             // 执行远程命令并处理结果
+            
             return ExecuteRestoreCommand(restoreCommand, targetDatabase, backupFile);
         }
 
@@ -73,19 +74,15 @@ namespace Maps.Backup.Core.Impls
             var pgUser = _shellClient.GetEnvironmentVar("pgUName");
             var pgPwd = _shellClient.GetEnvironmentVar("pgPwd");
 
-            // 构建命令：先设置PGPASSWORD环境变量（免密执行），再执行pg_restore
             var commandBuilder = new StringBuilder();
-            // 拼接PG密码环境变量（Linux/macOS用export，兼容远程服务器系统）
-            commandBuilder.Append($"export PGPASSWORD='{pgPwd}'; ");
-            // 基础pg_restore命令
-            commandBuilder.Append($"pg_restore -U {pgUser} -d {dbName} -c -F c -w ");
-            // 可选：添加目标Schema/分组参数
+            commandBuilder.Append($"set PGPASSWORD={pgPwd}\n ");
+            commandBuilder.Append($"pg_restore -h localhost -p 5432 -U {pgUser} -w -d {dbName} -v ");
+            // 可选：添加目标Schema参数（非空则拼接）
             if (!string.IsNullOrWhiteSpace(targetSchema))
             {
                 commandBuilder.Append($"-n {targetSchema} ");
             }
-            // 拼接备份文件远程路径（收尾）
-            commandBuilder.Append(backupFile.Path);
+            commandBuilder.Append($" {backupFile.RealPath} ");
 
             return commandBuilder.ToString();
         }

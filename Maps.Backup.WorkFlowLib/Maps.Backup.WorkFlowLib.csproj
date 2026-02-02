@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -9,13 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Maps.Backup.Core\Maps.Backup.Core.csproj" />
-    <ProjectReference Include="..\Maps.Backup.WorkFlowLib\Maps.Backup.WorkFlowLib.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="backup-config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

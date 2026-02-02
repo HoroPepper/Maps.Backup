@@ -1,5 +1,6 @@
 ﻿using Maps.Backup.Core.Interfaces;
 using Maps.Backup.Core.Models;
+using Maps.Backup.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,30 +17,7 @@ namespace Maps.Backup.Core.Impls
         {
             try
             {
-                // 1. 校验远程源文件是否存在
-                
-                if (!File.Exists(remoteFile.Path))
-                    throw new FileNotFoundException("远程文件不存在", remoteFile.Path);
-
-                // 核心修复：提取源文件的文件名，补全本地保存的文件路径
-                string sourceFileName = Path.GetFileName(remoteFile.Path); // 拿到源文件的完整文件名（如test.txt、demo.jpg）
-                string localSavePath = saveFile.Path;
-                // 判断如果传入的本地路径是目录，则自动拼接源文件名，补全为文件路径
-                if (Directory.Exists(localSavePath))
-                {
-                    localSavePath = Path.Combine(localSavePath, sourceFileName);
-                }
-
-                // 2. 获取本地保存目录，不存在则创建（此时localSavePath已确保是文件路径）
-                var saveDir = Path.GetDirectoryName(localSavePath);
-                if (!Directory.Exists(saveDir))
-                    Directory.CreateDirectory(saveDir);
-
-                // 3. 复制远程文件到本地（覆盖已存在的文件），使用补全后的文件路径
-                File.Copy(remoteFile.Path, localSavePath, true);
-
-                // 4. 返回填充实时属性的本地文件对象，返回补全后的路径
-                return new LocalFile(localSavePath);
+                return FileHelper.Copy(remoteFile, saveFile);
             }
             catch (Exception ex)
             {

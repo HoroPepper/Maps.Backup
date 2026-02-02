@@ -1,5 +1,6 @@
 ﻿using Maps.Backup.Core.Interfaces;
 using Maps.Backup.Core.Models;
+using Maps.Backup.Core.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,25 +15,7 @@ namespace Maps.Backup.Core.Impls
         {
             try
             {
-
-                if (!File.Exists(remoteFile.Path))
-                    throw new FileNotFoundException("远程文件不存在", remoteFile.Path);
-
-                string sourceFileName = Path.GetFileName(remoteFile.Path); 
-                string localSavePath = saveFile.Path;
-
-                if (Directory.Exists(localSavePath))
-                {
-                    localSavePath = Path.Combine(localSavePath, sourceFileName);
-                }
-
-                var saveDir = Path.GetDirectoryName(localSavePath);
-                if (!Directory.Exists(saveDir))
-                    Directory.CreateDirectory(saveDir);
-
-                File.Copy(remoteFile.Path, localSavePath, true);
-
-                return new LocalFile(localSavePath);
+                return FileHelper.Copy(remoteFile, saveFile);
             }
             catch (Exception ex)
             {

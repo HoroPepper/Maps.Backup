@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Maps.Backup.Core
 {
-    public class TaskManager
+    public class TaskFlow
     {
         private List<IWorkTaskNode> _taskNodes = new List<IWorkTaskNode>();
 
@@ -60,27 +60,40 @@ namespace Maps.Backup.Core
 
         public event Action<TaskContext,IWorkTaskNode> BeforeTaskNodeExecuted;
 
-        public void ExecuteAllTasks(object param)
+        public void ExecuteAllTasks(object param,TaskContext context)
         {
-            TaskContext context = new TaskContext();
             context.Nodes = GetAllTaskNodes();
-            foreach (var taskNode in _taskNodes)
+            context.FlowState = TaskFlowState.Running;
+            foreach (var taskNode in context.Nodes)
             {
                 if(taskNode == null)
                 {
                     continue;
                 }
-                BeforeTaskNodeExecuted?.Invoke(context, taskNode);
-                var nodeResult = taskNode.Execute(context);
-                context.LastTaskNode = taskNode;
-                context.LastTaskResult = nodeResult;
-                context.NodeResultList[taskNode.TaskId] = nodeResult;
-                if (context.LastTaskResult == null || !context.LastTaskResult.IsSuccess)
+                try
                 {
+                    if(context.FlowState == TaskFlowState.Stoped)
+                    {
+                        break;
+                    }
+                    BeforeTaskNodeExecuted?.Invoke(context, taskNode);
+                    var nodeResult = taskNode.Execute(context);
+                    context.LastTaskNode = taskNode;
+                    context.LastTaskResult = nodeResult;
+                    context.NodeResultList[taskNode.TaskId] = nodeResult;
+                    AfterTaskNodeExecuted?.Invoke(context);
+                }
+                catch(Exception ex)
+                {
+                    if(context != null)
+                    {
+                        context.FlowState = TaskFlowState.Stoped;
+                    }
                     break;
                 }
-                AfterTaskNodeExecuted?.Invoke(context);
             }
+
+            context.FlowState = TaskFlowState.Finished;
         }
     }
 }
