@@ -8,8 +8,7 @@ namespace Maps.Backup.Core.Interfaces
 {
     public interface IBackupService
     {
-        string Restore(string targetDatabase, IFile backupFile);
+        bool Restore(string targetDatabase, string targetGroup, IFile backupFile);
 
-        string Restore(string targetDatabase,string targetGroup, IFile backupFile);
     }
 }

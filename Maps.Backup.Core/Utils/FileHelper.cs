@@ -10,6 +10,11 @@ namespace Maps.Backup.Core.Utils
 {
     public static class FileHelper
     {
+        /// <summary>
+        /// 判断Win文件完整路径是否为文件夹
+        /// </summary>
+        /// <param name="normalizedPath"></param>
+        /// <returns></returns>
         public static bool IsDirectoryPath(string normalizedPath)
         {
             // 规则1：路径以系统默认路径分隔符结尾 → 判定为文件夹
@@ -22,30 +27,34 @@ namespace Maps.Backup.Core.Utils
             return string.IsNullOrEmpty(extension);
         }
 
-        public static IFile Copy(IFile sourceFile, IFile targetDir)
+        /// <summary>
+        /// 将Win本地文件从Copy到另一文件夹
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <param name="targetFile"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static IFile Copy(IFile sourceFile, IFile targetFile)
         {
             try
             {
 
                 string sourceFilePath = sourceFile.Path;
                 if (!File.Exists(sourceFilePath))
-                    throw new FileNotFoundException("远程文件不存在", sourceFilePath);
+                    throw new FileNotFoundException("来源文件不存在", sourceFilePath);
 
                 string sourceFileName = sourceFile.FileName;
                 string finalTargetFilePath = string.Empty;
 
-                // 4. 区分本地目标是【文件夹】还是【文件】，处理最终保存路径
-                if (targetDir.IsDirectory)
+                if (targetFile.IsDirectory)//目标文件类型为文件夹时，最终目标路径为目标文件夹+源文件名
                 {
-                    // 目标是文件夹：最终路径 = 文件夹路径 + 远程文件名
-                    finalTargetFilePath = Path.Combine(targetDir.Path, sourceFileName + sourceFile.FileType);
-                    // 自动创建【目标文件夹】（如果不存在）
-                    if (!Directory.Exists(targetDir.Path))
-                        Directory.CreateDirectory(targetDir.Path);
+                    finalTargetFilePath = Path.Combine(targetFile.Path, sourceFile.FileFullName);
+                    if (!Directory.Exists(targetFile.Path))
+                        Directory.CreateDirectory(targetFile.Path);
                 }
-                else
+                else//目标类型为文件时，最终目标路径为目标文件夹 + 目标源文件名
                 {
-                    finalTargetFilePath = targetDir.Path;
+                    finalTargetFilePath = targetFile.Path;
                     string targetFileParentDir = Path.GetDirectoryName(finalTargetFilePath);
                     if (!Directory.Exists(targetFileParentDir))
                         Directory.CreateDirectory(targetFileParentDir);
@@ -58,7 +67,7 @@ namespace Maps.Backup.Core.Utils
             catch (Exception ex)
             {
                 throw new InvalidOperationException(
-                    $"下载文件失败", ex);
+                    $"文件复制失败", ex);
             }
         }
     }

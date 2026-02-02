@@ -9,13 +9,19 @@ namespace Maps.Backup.Core.Interfaces
     public interface IZipService
     {
         /// <summary>
-        /// 解压压缩文件到指定目标路径
+        /// 将文件解压到指定文件夹
         /// </summary>
-        /// <param name="zipFilePath">压缩文件完整路径（如.zip/.7z/.rar）</param>
-        /// <param name="targetExtractPath">解压目标目录路径（不存在则自动创建）</param>
-        /// <returns>解压后的实际目录路径</returns>
-        List<IFile> Unzip(IFile zipFile, IFile targetFile);
+        /// <param name="zipFile"></param>
+        /// <param name="targetDir"></param>
+        /// <returns></returns>
+        List<IFile> Unzip(IFile zipFile, IFile targetDir);
 
-        IFile Zip(IFile targetFile, IFile zipFile);
+        /// <summary>
+        /// 将文件压缩到指定文件夹
+        /// </summary>
+        /// <param name="targetFile"></param>
+        /// <param name="zipFile"></param>
+        /// <returns></returns>
+        IFile Zip(IFile targetDir, IFile zipFile);
     }
 }

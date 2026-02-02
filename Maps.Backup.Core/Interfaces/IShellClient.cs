@@ -9,22 +9,26 @@ namespace Maps.Backup.Core.Interfaces
 {
     public interface IShellClient
     {
-        // <summary>
-        /// 执行Shell命令
+
+        /// <summary>
+        /// 执行Shell脚本
         /// </summary>
-        /// <param name="command">要执行的Shell命令</param>
-        /// <returns>命令执行结果（包含标准输出、错误输出、退出码）</returns>
+        /// <param name="command"></param>
+        /// <returns></returns>
         ShellExecuteResult Execute(string command);
 
         /// <summary>
-        /// 执行Shell命令（带执行后回调）
+        /// 设置环境变量
         /// </summary>
-        /// <param name="command">要执行的Shell命令</param>
-        /// <param name="afterExecuted">执行后回调方法，参数为命令执行结果</param>
-        void Execute(string command, Action<ShellExecuteResult> afterExecuted);
-
+        /// <param name="key"></param>
+        /// <param name="value"></param>
         void SetEnvironmentVar(string key, string value);
 
+        /// <summary>
+        /// 获取环境变量
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         string GetEnvironmentVar(string key);
 
     }
