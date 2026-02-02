@@ -79,14 +79,14 @@ namespace Maps.Backup.Core.Impls
             // Windows系统设置环境变量语法：set 变量名=值（密码带特殊字符也兼容）
             commandBuilder.Append($"set PGPASSWORD={pgPwd}; ");
             // 基础pg_restore命令（参数与原逻辑完全一致，-w强制免密，-c清理原有对象，-F c是自定义格式备份）
-            commandBuilder.Append($"pg_restore -U {pgUser} -d {dbName} -c -F c -w ");
+            commandBuilder.Append($"pg_restore -h localhost -p 5432 -U {pgUser} -w -d {dbName} -v ");
             // 可选：添加目标Schema参数（非空则拼接）
             if (!string.IsNullOrWhiteSpace(targetSchema))
             {
                 commandBuilder.Append($"-n {targetSchema} ");
             }
             // 拼接备份文件路径：Windows路径用双引号包裹（兼容带空格/特殊字符的路径），核心优化点
-            commandBuilder.Append($"\"{backupFile.Path}\"");
+            commandBuilder.Append($" \"{backupFile.Path}\" ");
 
             return commandBuilder.ToString();
         }
