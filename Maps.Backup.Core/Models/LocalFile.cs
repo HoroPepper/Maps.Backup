@@ -18,6 +18,7 @@ namespace Maps.Backup.Core.Models
         private readonly string _fileName;
         private readonly bool _isDirectory;
         private readonly string _locationType;
+        private readonly string _realPath;
         #endregion
 
         #region 实现IFile接口的只读属性（仅返回私有字段值）
@@ -27,6 +28,7 @@ namespace Maps.Backup.Core.Models
         public string FileName => _fileName;
         public bool IsDirectory => _isDirectory;
         public string LocationType => _locationType;
+        public string RealPath => _realPath;
         #endregion
 
         public LocalFile(string path)
@@ -46,6 +48,8 @@ namespace Maps.Backup.Core.Models
             _locationType = SystemConstants.FileLocationType.Local;
 
             _path = normalizedPath;
+
+            _realPath = normalizedPath;
 
             if (!_isDirectory)
             {

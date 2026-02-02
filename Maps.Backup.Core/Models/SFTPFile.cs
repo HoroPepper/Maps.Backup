@@ -37,6 +37,7 @@ namespace Maps.Backup.Core.Models
         /// 位置类型（和Location保持一致，兼容LocalFile设计）
         /// </summary>
         private readonly string _locationType;
+
         #endregion
 
         #region 实现IFile接口的只读属性（仅返回私有字段值，和LocalFile完全一致）
@@ -46,6 +47,9 @@ namespace Maps.Backup.Core.Models
         public string FileName => _fileName;
         public bool IsDirectory => _isDirectory;
         public string LocationType => _locationType;
+
+        public string RealPath { get; set; }
+
         #endregion
 
         /// <summary>

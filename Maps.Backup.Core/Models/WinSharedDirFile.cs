@@ -18,6 +18,7 @@ namespace Maps.Backup.Core.Models
         private readonly string _fileName;  // 文件名（无后缀）/最后一级文件夹名
         private readonly bool _isDirectory; // 是否为文件夹路径
         private readonly string _locationType;
+        private readonly string _realPath;
         #endregion
 
         #region 实现IFile只读接口：仅返回私有字段，无修改逻辑
@@ -27,6 +28,7 @@ namespace Maps.Backup.Core.Models
         public string FileName => _fileName;
         public bool IsDirectory => _isDirectory;
         public string LocationType => _locationType;
+        public string RealPath => _realPath;
         #endregion
 
         #region 构造函数：核心解析逻辑（仅基于路径字符串，支持新建传参）
@@ -43,6 +45,8 @@ namespace Maps.Backup.Core.Models
             _locationType = SystemConstants.FileLocationType.WinSharedDir;
 
             _path = normalizedPath;
+
+            _realPath = normalizedPath;
 
             if (!_isDirectory)
             {
