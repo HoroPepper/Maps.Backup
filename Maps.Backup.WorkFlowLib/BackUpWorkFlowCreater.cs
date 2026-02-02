@@ -341,7 +341,7 @@ namespace Maps.Backup.WorkFlowLib
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
                         {
-                            backupService.Restore(targetDbName, file);
+                            backupService.Restore(targetDbName, "", file);
                         }
 
                         return new TaskNodeResult()
@@ -400,7 +400,7 @@ namespace Maps.Backup.WorkFlowLib
                     });
                     foreach (var file in files)
                     {
-                        backupService.Restore(targetDbName, file);
+                        backupService.Restore(targetDbName, "", file);
                     }
 
                     return new TaskNodeResult()
@@ -446,7 +446,7 @@ namespace Maps.Backup.WorkFlowLib
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
                         {
-                            backupService.Restore(targetDbName, file);
+                            backupService.Restore(targetDbName, "", file);
                         }
 
                         return new TaskNodeResult()
