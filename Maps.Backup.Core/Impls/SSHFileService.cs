@@ -190,7 +190,7 @@ namespace Maps.Backup.Core.Impls
                 if (!string.IsNullOrWhiteSpace(searchParam.FullName))
                 {
                     fileQuery = fileQuery.Where(file =>
-                       (file.FileName + "." + file.FileType).Equals(searchParam.FullName, StringComparison.OrdinalIgnoreCase));
+                       file.FileFullName.Equals(searchParam.FullName, StringComparison.OrdinalIgnoreCase));
                 }
                 // 条件2：文件名前缀匹配（不含扩展名，忽略大小写）
                 else if (!string.IsNullOrWhiteSpace(searchParam.Prefix))
@@ -258,7 +258,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 5. 返回远程文件对象（补全后的实际上传路径）
-                return new SFTPFile(remoteTargetPath);
+                return new SFTPFile(remoteTargetPath,false);
             }
             catch (Exception ex)
             {
@@ -298,7 +298,7 @@ namespace Maps.Backup.Core.Impls
                 else
                 {
                     // 收集文件路径
-                    fileList.Add(new SFTPFile(fullPath) { RealPath = file.FullName });
+                    fileList.Add(new SFTPFile(fullPath,false) { RealPath = file.FullName });
                 }
             }
         }

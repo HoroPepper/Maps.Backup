@@ -32,11 +32,11 @@ namespace Maps.Backup.WorkFlowLib
         {
             TaskFlow taskFlow = new TaskFlow();
 
-            taskFlow.AddTaskNode(CreateBackupDownTaskNode());
-            taskFlow.AddTaskNode(CreateUnZipTaskNode());
-            taskFlow.AddTaskNode(CreateBackupUpTaskNode());
-            taskFlow.AddTaskNode(CreateQueryRealPathTaskNode());
-            taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
+            //taskFlow.AddTaskNode(CreateBackupDownTaskNode());
+            //taskFlow.AddTaskNode(CreateUnZipTaskNode());
+            //taskFlow.AddTaskNode(CreateBackupUpTaskNode());
+            //taskFlow.AddTaskNode(CreateQueryRealPathTaskNode());
+            //taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
@@ -218,7 +218,7 @@ namespace Maps.Backup.WorkFlowLib
                     List<IFile> result = new List<IFile>();
                     foreach (var file in upLoadFiles)
                     {
-                        result.Add(dbFileService.Upload(file, new SFTPFile(dbFileSaveDir)));
+                        result.Add(dbFileService.Upload(file, new SFTPFile(dbFileSaveDir,false)));
                     }
                     return new TaskNodeResult()
                     {

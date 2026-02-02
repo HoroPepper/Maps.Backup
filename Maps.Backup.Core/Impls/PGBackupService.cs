@@ -82,7 +82,7 @@ namespace Maps.Backup.Core.Impls
             {
                 commandBuilder.Append($"-n {targetSchema} ");
             }
-            commandBuilder.Append($" {backupFile.Path} ");
+            commandBuilder.Append($" {backupFile.RealPath} ");
 
             return commandBuilder.ToString();
         }

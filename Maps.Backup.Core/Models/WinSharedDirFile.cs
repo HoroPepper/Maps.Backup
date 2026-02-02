@@ -19,6 +19,7 @@ namespace Maps.Backup.Core.Models
         private readonly bool _isDirectory; // 是否为文件夹路径
         private readonly string _locationType;
         private readonly string _realPath;
+        private readonly string _fileFullName;
         #endregion
 
         #region 实现IFile只读接口：仅返回私有字段，无修改逻辑
@@ -29,6 +30,7 @@ namespace Maps.Backup.Core.Models
         public bool IsDirectory => _isDirectory;
         public string LocationType => _locationType;
         public string RealPath => _realPath;
+        public string FileFullName => _fileFullName;
         #endregion
 
         #region 构造函数：核心解析逻辑（仅基于路径字符串，支持新建传参）
@@ -50,11 +52,13 @@ namespace Maps.Backup.Core.Models
 
             if (!_isDirectory)
             {
+                _fileFullName = System.IO.Path.GetFileName(normalizedPath);
                 _fileName = System.IO.Path.GetFileNameWithoutExtension(normalizedPath);
                 _fileType = System.IO.Path.GetExtension(normalizedPath);
             }
             else
             {
+                _fileFullName = new DirectoryInfo(normalizedPath).Name;
                 _fileName = new DirectoryInfo(normalizedPath).Name;
                 _fileType = string.Empty;
             }

@@ -20,6 +20,8 @@ namespace Maps.Backup.Core.Interfaces
 
         string FileName { get; }
 
+        string FileFullName { get; }
+
         bool IsDirectory { get; }
 
     }

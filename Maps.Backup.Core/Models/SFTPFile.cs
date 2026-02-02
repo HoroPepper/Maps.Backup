@@ -38,6 +38,10 @@ namespace Maps.Backup.Core.Models
         /// </summary>
         private readonly string _locationType;
 
+        private bool _isUnixPathStyle = true;
+
+        private readonly string _fileFullName;
+
         #endregion
 
         #region 实现IFile接口的只读属性（仅返回私有字段值，和LocalFile完全一致）
@@ -48,7 +52,24 @@ namespace Maps.Backup.Core.Models
         public bool IsDirectory => _isDirectory;
         public string LocationType => _locationType;
 
-        public string RealPath { get; set; }
+        private string _realPath;
+        public string RealPath 
+        {
+            get => _realPath;
+            set
+            {
+                if (!_isUnixPathStyle && !string.IsNullOrEmpty(value) && value.StartsWith("/"))
+                {
+                    _realPath = value.Substring(1);
+                }
+                else
+                {
+                    _realPath = value;
+                }
+            }
+        }
+
+        public string FileFullName => _fileFullName;
 
         #endregion
 
@@ -57,7 +78,7 @@ namespace Maps.Backup.Core.Models
         /// 自动标准化为Unix风格绝对路径，区分文件/目录
         /// </summary>
         /// <param name="sftpPath">SFTP远程路径（支持Windows/相对/绝对路径，自动标准化）</param>
-        public SFTPFile(string sftpPath)
+        public SFTPFile(string sftpPath, bool isUnixPathStyle)
         {
             // 1. 基础校验：路径不能为空/空白
             if (string.IsNullOrWhiteSpace(sftpPath))
@@ -76,16 +97,20 @@ namespace Maps.Backup.Core.Models
             // 5. 赋值标准化后的SFTP绝对路径（所有操作基于此路径，避免格式错误）
             _path = normalizedSshPath;
 
+            _isUnixPathStyle = isUnixPathStyle;
+
             // 6. 区分文件/目录，初始化文件名/文件类型
             if (!_isDirectory)
             {
                 // 远程文件：截取文件名（无扩展名）和扩展名
+                _fileFullName = GetSftpFileName(normalizedSshPath);
                 _fileName = GetSftpFileNameWithoutExtension(normalizedSshPath);
                 _fileType = GetSftpFileExtension(normalizedSshPath);
             }
             else
             {
                 // 远程目录：截取最后一级目录名，文件类型为空
+                _fileFullName = GetSftpDirectoryName(normalizedSshPath);
                 _fileName = GetSftpDirectoryName(normalizedSshPath);
                 _fileType = string.Empty;
             }
@@ -104,6 +129,14 @@ namespace Maps.Backup.Core.Models
                           .Replace('\\', '/')          // 替换Windows反斜杠为Unix正斜杠（核心）
                           .Replace("//", "/")           // 去重连续斜杠，避免服务端解析异常
                           .TrimEnd('/');                // 去除末尾多余/（统一格式，目录通过_isDirectory判断）
+        }
+
+
+        private string GetSftpFileName(string sftpAbsolutePath)
+        {
+            // 截取最后一个/后的完整文件名
+            string fullFileName = sftpAbsolutePath.Substring(sftpAbsolutePath.LastIndexOf("/") + 1);
+            return fullFileName;
         }
 
         /// <summary>
