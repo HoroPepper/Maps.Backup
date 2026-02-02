@@ -75,7 +75,7 @@ namespace Maps.Backup.Core.Impls
             var pgPwd = _shellClient.GetEnvironmentVar("pgPwd");
 
             var commandBuilder = new StringBuilder();
-            commandBuilder.Append($"set PGPASSWORD={pgPwd} && ");
+            commandBuilder.Append($"set PGPASSWORD={pgPwd}\n ");
             commandBuilder.Append($"pg_restore -h localhost -p 5432 -U {pgUser} -w -d {dbName} -v ");
             // 可选：添加目标Schema参数（非空则拼接）
             if (!string.IsNullOrWhiteSpace(targetSchema))
