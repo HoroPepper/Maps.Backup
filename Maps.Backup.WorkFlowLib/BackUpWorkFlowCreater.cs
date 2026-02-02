@@ -35,9 +35,10 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateBackupDownTaskNode());
             taskFlow.AddTaskNode(CreateUnZipTaskNode());
             taskFlow.AddTaskNode(CreateBackupUpTaskNode());
-            taskFlow.AddTaskNode(CreateQueryRealPathTaskNode());
+            taskFlow.AddTaskNode(CreateDBCreateTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
+            taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
@@ -232,84 +233,6 @@ namespace Maps.Backup.WorkFlowLib
             return upLoadNode;
         }
 
-        private IWorkTaskNode CreateQueryRealPathTaskNode()
-        {
-            IWorkTaskNode restoreNode = new DelegateTaskNode()
-            {
-                TaskId = "backup-queryPath",
-                TaskName = "查询Backup文件真实路径",
-                TaskType = "file-query",
-                DelegateFunc = (context) =>
-                {
-                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
-                    {
-                        return new TaskNodeResult()
-                        {
-                            ResultData = null,
-                            IsSuccess = false,
-                            Message = "上游任务失败",
-                        };
-                    }
-                    if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
-                    {
-                        string sshIP = context.ContextDic[ContextKeySshIP];
-                        string ssUName = context.ContextDic[ContextKeySshUName];
-                        string ssPwd = context.ContextDic[ContextKeySshPwd];
-                        using var client = new SftpClient(sshIP, 22, ssUName, ssPwd);
-                        client.Connect(); 
-                        if (!client.IsConnected)
-                        {
-                            throw new InvalidOperationException("SFTP服务器连接失败");
-                        }
-                        try
-                        {
-                            List<IFile> realPathFiles = new List<IFile>();
-                            foreach(var file in files)
-                            {
-                                // 2. 获取SFTP文件对象（标准化路径，确保能找到）
-                                var sftpFile = client.Get(file.Path);
-                                if (sftpFile == null)
-                                {
-                                    throw new FileNotFoundException("SFTP服务器端文件/目录不存在");
-                                }
-
-                                realPathFiles.Add(new LocalFile(sftpFile.FullName));
-                            }
-
-                            files.Clear();
-                            files.AddRange(realPathFiles);
-
-                            return new TaskNodeResult()
-                            {
-                                ResultData = null,
-                                IsSuccess = true,
-                                Message = "backup文件真实路径获取成功",
-                            };
-
-                        }
-                        finally
-                        {
-                            // 确保连接关闭
-                            if (client.IsConnected)
-                            {
-                                client.Disconnect();
-                            }
-                        }
-                    }
-
-                    return new TaskNodeResult()
-                    {
-                        ResultData = null,
-                        IsSuccess = false,
-                        Message = "backup文件真实路径获取失败",
-                    };
-
-                }
-            };
-
-            return restoreNode;
-        }
-
         private IWorkTaskNode CreateBackupRestoreTaskNode()
         {
             IWorkTaskNode restoreNode = new DelegateTaskNode()
@@ -395,8 +318,7 @@ namespace Maps.Backup.WorkFlowLib
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
                     List<IFile> files = fileService.FindFile(new FileSearchParam()
                     {
-                        RootPath = "\\sftp\\E_disk",
-                        FullName = "2026_03_init.backup"
+                        FullPath = devBackup
                     });
                     foreach (var file in files)
                     {
@@ -416,8 +338,30 @@ namespace Maps.Backup.WorkFlowLib
             return restoreNode;
         }
 
+        private IWorkTaskNode CreateDBCreateTaskNode()
+        {
+            IWorkTaskNode restoreNode = new DelegateTaskNode()
+            {
+                TaskId = "db_create",
+                TaskName = "创建数据库",
+                TaskType = "db-create",
+                DelegateFunc = (context) =>
+                {
 
-        private IWorkTaskNode CreateDBFilesUpdateTaskNode()
+                    return new TaskNodeResult()
+                    {
+                        ResultData = null,
+                        IsSuccess = true,
+                        Message = "",
+                    };
+
+                }
+            };
+
+            return restoreNode;
+        }
+
+        private IWorkTaskNode CreateCustomerFieldUpdateTaskNode()
         {
             IWorkTaskNode restoreNode = new DelegateTaskNode()
             {
@@ -437,24 +381,14 @@ namespace Maps.Backup.WorkFlowLib
                     }
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
                     {
-                        string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
+                        string sql = context.ContextDic["updateCustomerSQL"];
+                        string dbUName = context.ContextDic[ContextKeyDbUName];
+                        string dbPwd = context.ContextDic[ContextKeydbPwd];
                         string targetDbName = context.ContextDic[ContextKeyTargetDbName];
-                        string sshIP = context.ContextDic[ContextKeySshIP];
-                        string ssUName = context.ContextDic[ContextKeySshUName];
-                        string ssPwd = context.ContextDic[ContextKeySshPwd];
-                        IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, "1", "1", "", "");
-                        IBackupService backupService = new PGBackupService(shellClient);
-                        foreach (var file in files)
-                        {
-                            backupService.Restore(targetDbName, "", file);
-                        }
+                        string targetCustomSeq = "";
 
-                        return new TaskNodeResult()
-                        {
-                            ResultData = null,
-                            IsSuccess = true,
-                            Message = "backup文件恢复成功",
-                        };
+                        sql.Replace("{targetCustomSeq}", targetCustomSeq);
+
                     }
 
                     return new TaskNodeResult()
