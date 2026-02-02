@@ -8,6 +8,8 @@ namespace Maps.Backup.WorkFlowEditor.CreateParam
 {
     public class WorkNodeCreateParam
     {
+        public string TaskId { get; set; }
+
         public string TaskName { get; set; }
 
         public string TaskType { get; set; }

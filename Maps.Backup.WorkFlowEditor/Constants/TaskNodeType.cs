@@ -8,6 +8,8 @@ namespace Maps.Backup.WorkFlowEditor.Constants
 {
     public static class TaskNodeType
     {
+        public static string Load = "load";
+
         public static string Download = "download";
 
         public static string Upload = "upload";
