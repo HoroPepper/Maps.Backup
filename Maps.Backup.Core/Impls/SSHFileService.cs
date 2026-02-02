@@ -110,7 +110,7 @@ namespace Maps.Backup.Core.Impls
             if (!_sftpClient.Exists(remotePath))
                 return false;
             var fileAttributes = _sftpClient.GetAttributes(remotePath);
-            return fileAttributes.IsDirectory;
+            return fileAttributes.IsDirectory || fileAttributes.IsSymbolicLink;
         }
         #endregion
 
@@ -215,7 +215,7 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 4. 转换为IFile对象列表返回
-                return fileQuery.Select(path => new LocalFile(path)).ToList<IFile>();
+                return fileQuery.Select(path => new SFTPFile(path)).ToList<IFile>();
             }
             catch (Exception ex)
             {

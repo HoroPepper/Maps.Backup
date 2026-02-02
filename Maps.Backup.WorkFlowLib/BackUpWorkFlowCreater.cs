@@ -37,6 +37,7 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateBackupUpTaskNode());
             taskFlow.AddTaskNode(CreateQueryRealPathTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
+            taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
@@ -394,7 +395,8 @@ namespace Maps.Backup.WorkFlowLib
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
                     List<IFile> files = fileService.FindFile(new FileSearchParam()
                     {
-                        FullPath = devBackup,
+                        RootPath = "\\sftp\\E_disk",
+                        FullName = "2026_03_init.backup"
                     });
                     foreach (var file in files)
                     {
@@ -406,13 +408,6 @@ namespace Maps.Backup.WorkFlowLib
                         ResultData = null,
                         IsSuccess = true,
                         Message = "dev-backup文件恢复成功",
-                    };
-
-                    return new TaskNodeResult()
-                    {
-                        ResultData = null,
-                        IsSuccess = false,
-                        Message = "dev-backup文件恢复失败",
                     };
 
                 }

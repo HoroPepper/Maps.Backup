@@ -20,7 +20,7 @@ namespace Maps.Backup.Core.Impls
         private readonly string _pgUName;
         private readonly string _pgPwd;
         // 远程Windows临时目录（固定，需确保目标机该目录存在且有读写执行权限）
-        private readonly string _tempDir = "/commandTemp";
+        private readonly string _tempDir = "/sftp/commandTemp";
         // 远程BAT文件的基础名称（拼接随机串避免重名）
         private readonly string _batBaseName = "PgBackup_Execute_";
 
