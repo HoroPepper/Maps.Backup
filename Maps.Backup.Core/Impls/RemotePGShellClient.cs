@@ -162,12 +162,8 @@ namespace Maps.Backup.Core.Impls
             if (string.IsNullOrWhiteSpace(command))
                 throw new ArgumentNullException(nameof(command), "执行的命令不能为空");
 
-            // 改用Task.Run实现真正的异步非阻塞，避免原同步调用导致的线程阻塞
-            Task.Run(() =>
-            {
-                var executeResult = Execute(command);
-                afterExecuted?.Invoke(executeResult);
-            });
+            var executeResult = Execute(command);
+            afterExecuted?.Invoke(executeResult);
         }
 
         public string GetEnvironmentVar(string key)
