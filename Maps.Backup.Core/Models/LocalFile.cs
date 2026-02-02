@@ -33,6 +33,10 @@ namespace Maps.Backup.Core.Models
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException(nameof(path), "路径不能为空或空白！");
+            if(path.StartsWith("/"))
+            {
+                path = path.Substring(1);
+            }
 
             string normalizedPath = System.IO.Path.GetFullPath(path);
 
