@@ -84,7 +84,7 @@ namespace Maps.Backup.WorkFlowLib
             targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
             {
                 FullPath = backUpDir,
-            }));
+            }).Where(x => !x.IsDirectory));
 
             List<IFile> downLoadFiles = new List<IFile>();
 
@@ -320,6 +320,8 @@ namespace Maps.Backup.WorkFlowLib
                     string devBackup = context.ContextDic[ContextKeyDevBackup];
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
+                    string dbIP = context.ContextDic["dbIP"];
+                    string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
                     IBackupService backupService = new PGBackupService(shellClient);
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
@@ -327,17 +329,62 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         FullPath = devBackup
                     });
-                    foreach (var file in files)
-                    {
-                        backupService.Restore(targetDbName, "", file);
-                    }
 
-                    return new TaskNodeResult()
+                    using var cts = new CancellationTokenSource();
+                    CancellationToken cancellationToken = cts.Token;
+                    Task.Run(() =>{
+
+                        using (var conn = new NpgsqlConnection(connStr))
+                        {
+                            conn.Open();
+                            bool isK900002Exist = false;
+                            while (!isK900002Exist)
+                            {
+                                if(cancellationToken.IsCancellationRequested)
+                                {
+                                    return;
+                                }
+                                string schemaSql = @"SELECT schema_name 
+                                   FROM information_schema.schemata 
+                                   WHERE catalog_name = (SELECT current_database())
+                                    AND schema_name = 'K900002'
+                                   ORDER BY schema_name;";
+                                var qResult = conn.Query<string>(schemaSql).ToList();
+                                if (qResult != null && qResult.Count > 0)
+                                {
+                                    isK900002Exist = true;
+                                }
+                                else
+                                {
+                                    Thread.Sleep(5000);
+                                }
+                            }
+                            string dropSchemaSql = "DROP SCHEMA K900002 CASCADE;";
+                            conn.Execute(dropSchemaSql);
+                        }
+                    },cancellationToken);
+                    try
                     {
-                        ResultData = null,
-                        IsSuccess = true,
-                        Message = "dev-backup文件恢复成功",
-                    };
+                        foreach (var file in files)
+                        {
+                            backupService.Restore(targetDbName, "", file);
+                        }
+
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = true,
+                            Message = "dev-backup文件恢复成功",
+                        };
+                    }
+                    finally
+                    {
+                        if (!cts.IsCancellationRequested)
+                        {
+                            cts.Cancel();
+                        }
+                    }
+                    
 
                 }
             };
@@ -364,7 +411,7 @@ namespace Maps.Backup.WorkFlowLib
                     IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
                     var result = shellClient.Execute($@"set PGPASSWORD={dbPwd}
                     createdb -h localhost -p 5432 -U {dbUName} -w {targetDbName} ");
-                    if(result.IsSuccess)
+                    if(result.IsSuccess || result.StandardError.Contains("already exists"))
                     {
                         return new TaskNodeResult()
                         {
