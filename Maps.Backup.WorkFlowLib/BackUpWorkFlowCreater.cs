@@ -347,7 +347,7 @@ namespace Maps.Backup.WorkFlowLib
                                 string schemaSql = @"SELECT schema_name 
                                    FROM information_schema.schemata 
                                    WHERE catalog_name = (SELECT current_database())
-                                    AND schema_name = 'K900002'
+                                    AND schema_name = 'k900002'
                                    ORDER BY schema_name;";
                                 var qResult = conn.Query<string>(schemaSql).ToList();
                                 if (qResult != null && qResult.Count > 0)
