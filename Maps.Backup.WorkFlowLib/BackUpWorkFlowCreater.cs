@@ -41,7 +41,7 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateDBCreateTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
-            //taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
+            taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
@@ -403,17 +403,33 @@ namespace Maps.Backup.WorkFlowLib
                             Message = "上游任务失败",
                         };
                     }
-                    string sql = context.ContextDic["updateCustomerSQL"];
+                    string sqlPath = context.ContextDic["sqlPath"];
+                    IFileService localFileService = new LocalFileService();
+                    var sqlFile = localFileService.FindFile(new FileSearchParam()
+                    {
+                        FullPath = sqlPath,
+                    }).FirstOrDefault();
+                    if(sqlFile == null)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "SQL文件未找到",
+                        };
+                    }
+                    string fileContent = File.ReadAllText(sqlFile.Path);
+                    string dbIP = context.ContextDic["dbIP"];
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
-                    string connStr = $"Host=localhost;Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
+                    string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     string schemaSql = @"SELECT schema_name 
                            FROM information_schema.schemata 
                            WHERE catalog_name = (SELECT current_database())  -- 仅查询当前连接的数据库
                            ORDER BY schema_name;";
                     List<string> schema_nameList = new List<string>();
-                    using (var conn = new NpgsqlConnection(schemaSql))
+                    using (var conn = new NpgsqlConnection(connStr))
                     {
                         conn.Open();
                         var qResult = conn.Query<string>(schemaSql).ToList();
@@ -433,10 +449,10 @@ namespace Maps.Backup.WorkFlowLib
                         };
                     }
                     string targetCustomerSeq = targetKSchema.Substring(1);
-                    using (var conn = new NpgsqlConnection(schemaSql))
+                    using (var conn = new NpgsqlConnection(connStr))
                     {
                         conn.Open();
-                        string executeSql = sql.Replace("{customerSeq}", targetCustomerSeq);
+                        string executeSql = fileContent.Replace("{customerSeq}", targetCustomerSeq);
                         executeSql = executeSql.Replace("{dbName}", targetDbName);
                         var qResult = conn.Execute(executeSql);
                         if(qResult >= 0)

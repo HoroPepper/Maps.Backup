@@ -28,6 +28,17 @@ namespace Maps.Backup.Core.Impls
         {
             try
             {
+                if(!string.IsNullOrWhiteSpace(searchParam?.FullPath))
+                {
+                    if(Path.Exists(searchParam.FullPath))
+                    {
+                        return new List<IFile> { new LocalFile(searchParam.FullPath) };
+                    }
+                    else
+                    {
+                        return new List<IFile>();
+                    }
+                }
 
                 if (string.IsNullOrWhiteSpace(searchParam.RootPath) || !Directory.Exists(searchParam.RootPath))
                     throw new DirectoryNotFoundException("搜索根路径不存在或为空", new Exception(searchParam.RootPath ?? "空路径"));
