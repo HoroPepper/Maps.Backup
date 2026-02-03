@@ -81,6 +81,10 @@ namespace Maps.Backup.WorkFlowLib
                 FileType = ".backup",
                 IsRecursive = true,
             }));
+            targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+            {
+                FullPath = backUpDir,
+            }));
 
             List<IFile> downLoadFiles = new List<IFile>();
 
