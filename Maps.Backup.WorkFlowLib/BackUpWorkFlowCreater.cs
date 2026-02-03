@@ -30,6 +30,8 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeySshPwd = "sshPwd";
         public readonly string ContextKeyDbUName = "dbUName";
         public readonly string ContextKeydbPwd = "dbPwd";
+        public readonly string ContextKeydbIP = "dbIP";
+        public readonly string ContextKeySqlPath = "sqlPath";
 
         public TaskFlow Create()
         {
@@ -320,7 +322,7 @@ namespace Maps.Backup.WorkFlowLib
                     string devBackup = context.ContextDic[ContextKeyDevBackup];
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
-                    string dbIP = context.ContextDic["dbIP"];
+                    string dbIP = context.ContextDic[ContextKeydbIP];
                     string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
                     IBackupService backupService = new PGBackupService(shellClient);
@@ -454,7 +456,7 @@ namespace Maps.Backup.WorkFlowLib
                             Message = "上游任务失败",
                         };
                     }
-                    string sqlPath = context.ContextDic["sqlPath"];
+                    string sqlPath = context.ContextDic[ContextKeySqlPath];
                     IFileService localFileService = new LocalFileService();
                     var sqlFile = localFileService.FindFile(new FileSearchParam()
                     {
@@ -470,7 +472,7 @@ namespace Maps.Backup.WorkFlowLib
                         };
                     }
                     string fileContent = File.ReadAllText(sqlFile.Path);
-                    string dbIP = context.ContextDic["dbIP"];
+                    string dbIP = context.ContextDic[ContextKeydbIP];
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
