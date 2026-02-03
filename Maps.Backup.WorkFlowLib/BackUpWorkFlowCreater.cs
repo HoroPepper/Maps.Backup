@@ -41,7 +41,7 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateDBCreateTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
-            taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
+            //taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {

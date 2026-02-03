@@ -134,7 +134,7 @@ namespace Maps.Backup.Core.Impls
                 {
                     if (sftpClient.IsConnected && sftpClient.Exists(remoteBatFullPath))
                     {
-                        //sftpClient.DeleteFile(remoteBatFullPath);
+                        sftpClient.DeleteFile(remoteBatFullPath);
                         // 仅在无执行错误时拼接删除成功信息，避免覆盖错误日志
                         if (string.IsNullOrWhiteSpace(result.StandardError))
                         {

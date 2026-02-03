@@ -172,6 +172,13 @@ namespace Maps.Backup.Core.Impls
             try
             {
                 EnsureConnectionOpen();
+
+                if(!string.IsNullOrWhiteSpace(searchParam.FullPath))
+                {
+                    var file = _sftpClient.Get(searchParam.FullPath.Replace('\\', '/'));
+                    return file != null ? new List<IFile> { new SFTPFile(searchParam.FullPath, false) { RealPath = file.FullName } } : new List<IFile>();
+                }
+
                 string rootPath = searchParam.RootPath.Replace('\\', '/');
                 // 1. 校验搜索根路径
                 if (string.IsNullOrWhiteSpace(rootPath) || !_sftpClient.Exists(rootPath) || !IsRemoteDirectory(rootPath))
@@ -244,7 +251,7 @@ namespace Maps.Backup.Core.Impls
                 }
                 // 2. 补全远程目标路径：目录则拼接本地文件名
                 
-                string localFileName = localFile.FileName + localFile.FileType;
+                string localFileName = localFile.FileFullName;
                 string remoteTargetPath = Path.Combine(remoteDirPath, localFileName).Replace('\\', '/');
                 if (!IsRemoteDirectory(remoteDirPath))
                 {
@@ -258,7 +265,12 @@ namespace Maps.Backup.Core.Impls
                 }
 
                 // 5. 返回远程文件对象（补全后的实际上传路径）
-                return new SFTPFile(remoteTargetPath,false);
+                var realFile = _sftpClient.Get(remoteTargetPath);
+                if(realFile == null)
+                {
+                    return null;
+                }
+                return new SFTPFile(remoteTargetPath, false) { RealPath = realFile.FullName };
             }
             catch (Exception ex)
             {
