@@ -505,7 +505,7 @@ namespace Maps.Backup.WorkFlowLib
                         conn.Open();
                         string executeSql = fileContent.Replace("{customerSeq}", targetCustomerSeq);
                         executeSql = executeSql.Replace("{dbName}", targetDbName);
-                        var qResult = conn.Execute(executeSql);
+                        var qResult = conn.Execute(executeSql,commandTimeout:0);
                         if(qResult >= 0)
                         {
                             return new TaskNodeResult()
