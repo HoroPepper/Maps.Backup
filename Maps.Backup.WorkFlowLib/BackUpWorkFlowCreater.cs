@@ -1,8 +1,10 @@
-﻿using Maps.Backup.Core;
+﻿using Dapper;
+using Maps.Backup.Core;
 using Maps.Backup.Core.Impls;
 using Maps.Backup.Core.Interfaces;
 using Maps.Backup.Core.Models;
 using Maps.Backup.Core.TaskNodes;
+using Npgsql;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
@@ -39,7 +41,7 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateDBCreateTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
-            //taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
+            taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
@@ -401,24 +403,63 @@ namespace Maps.Backup.WorkFlowLib
                             Message = "上游任务失败",
                         };
                     }
-                    if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
+                    string sql = context.ContextDic["updateCustomerSQL"];
+                    string dbUName = context.ContextDic[ContextKeyDbUName];
+                    string dbPwd = context.ContextDic[ContextKeydbPwd];
+                    string targetDbName = context.ContextDic[ContextKeyTargetDbName];
+                    string connStr = $"Host=localhost;Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
+                    string schemaSql = @"SELECT schema_name 
+                           FROM information_schema.schemata 
+                           WHERE catalog_name = (SELECT current_database())  -- 仅查询当前连接的数据库
+                           ORDER BY schema_name;";
+                    List<string> schema_nameList = new List<string>();
+                    using (var conn = new NpgsqlConnection(schemaSql))
                     {
-                        string sql = context.ContextDic["updateCustomerSQL"];
-                        string dbUName = context.ContextDic[ContextKeyDbUName];
-                        string dbPwd = context.ContextDic[ContextKeydbPwd];
-                        string targetDbName = context.ContextDic[ContextKeyTargetDbName];
-                        string targetCustomSeq = "";
-
-                        sql.Replace("{targetCustomSeq}", targetCustomSeq);
+                        conn.Open();
+                        var qResult = conn.Query<string>(schemaSql).ToList();
+                        if(qResult != null && qResult.Count > 0)
+                        {
+                            schema_nameList.AddRange(qResult);
+                        }
+                    }
+                    var targetKSchema = schema_nameList.FirstOrDefault(x => x.StartsWith("k") && x.Substring(1) != "900002");
+                    if (targetKSchema ==  null)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "字段更新失败",
+                        };
+                    }
+                    string targetCustomerSeq = targetKSchema.Substring(1);
+                    using (var conn = new NpgsqlConnection(schemaSql))
+                    {
+                        conn.Open();
+                        string executeSql = sql.Replace("{customerSeq}", targetCustomerSeq);
+                        executeSql = executeSql.Replace("{dbName}", targetDbName);
+                        var qResult = conn.Execute(executeSql);
+                        if(qResult >= 0)
+                        {
+                            return new TaskNodeResult()
+                            {
+                                ResultData = null,
+                                IsSuccess = true,
+                                Message = "字段更新成功",
+                            };
+                        }
+                        else
+                        {
+                            return new TaskNodeResult()
+                            {
+                                ResultData = null,
+                                IsSuccess = false,
+                                Message = "字段更新失败",
+                            };
+                        }
 
                     }
 
-                    return new TaskNodeResult()
-                    {
-                        ResultData = null,
-                        IsSuccess = false,
-                        Message = "backup文件恢复失败",
-                    };
 
                 }
             };

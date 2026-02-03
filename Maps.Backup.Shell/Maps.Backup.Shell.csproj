@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Npgsql" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Maps.Backup.Core\Maps.Backup.Core.csproj" />
     <ProjectReference Include="..\Maps.Backup.WorkFlowLib\Maps.Backup.WorkFlowLib.csproj" />
   </ItemGroup>
