@@ -3,6 +3,7 @@ using Maps.Backup.Core.Impls;
 using Maps.Backup.Core.Interfaces;
 using Maps.Backup.Core.Models;
 using Maps.Backup.Core.TaskNodes;
+using Org.BouncyCastle.Bcpg.OpenPgp;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
 using System;
@@ -38,7 +39,7 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateDBCreateTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
-            taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
+            //taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
@@ -347,13 +348,34 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "db-create",
                 DelegateFunc = (context) =>
                 {
-
-                    return new TaskNodeResult()
+                    string targetDbName = context.ContextDic[ContextKeyTargetDbName];
+                    string sshIP = context.ContextDic[ContextKeySshIP];
+                    string ssUName = context.ContextDic[ContextKeySshUName];
+                    string ssPwd = context.ContextDic[ContextKeySshPwd];
+                    string devBackup = context.ContextDic[ContextKeyDevBackup];
+                    string dbUName = context.ContextDic[ContextKeyDbUName];
+                    string dbPwd = context.ContextDic[ContextKeydbPwd];
+                    IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
+                    var result = shellClient.Execute($@"set PGPASSWORD={dbPwd}
+                    createdb -h localhost -p 5432 -U {dbUName} -w {targetDbName} ");
+                    if(result.IsSuccess)
                     {
-                        ResultData = null,
-                        IsSuccess = true,
-                        Message = "",
-                    };
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = true,
+                            Message = "数据库创建成功",
+                        };
+                    }
+                    else
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = $"数据库创建失败，错误信息：{result.StandardError}",
+                        };
+                    }
 
                 }
             };
