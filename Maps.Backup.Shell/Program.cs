@@ -59,15 +59,16 @@ namespace Maps.Backup.Shell
             try
             {
                 Console.WriteLine("\n开始执行备份任务...");
-                BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater();
+                var msgPub = new DelegateStrMsgPub((msg) =>
+                {
+                    Console.WriteLine(msg);
+                });
+                BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater(msgPub);
                 var taskMgt = workFlowCreater.Create();
                 taskMgt.ExecuteAllTasks(null, new TaskContext()
                 {
                     ContextDic = finalConfig, // 注入合并后的配置
-                    MessagePub = new DelegateStrMsgPub((msg) =>
-                    {
-                        Console.WriteLine(msg);
-                    })
+                    MessagePub = msgPub,
                 });
                 Console.WriteLine("\n✅ 备份任务执行完成！");
             }
