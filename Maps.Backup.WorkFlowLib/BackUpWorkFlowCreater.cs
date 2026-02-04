@@ -44,6 +44,7 @@ namespace Maps.Backup.WorkFlowLib
                 ContextKeydbIP,
                 ContextKeySqlPath,
                 ContextKeyBatTempDir,
+                ContextDevKSchema,
             };
             if(_isEmailNotify)
             {
@@ -70,6 +71,7 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeySmtpPwd = "smtpPwd";         
         public readonly string ContextKeyRecvEmails = "recvEmails";    
         public readonly string ContextKeyEmailSubject = "emailSubject";
+        public readonly string ContextDevKSchema = "devKSchema";
 
         public List<string> RequiredKeys { get; set; } = new List<string>();
 
@@ -378,6 +380,7 @@ namespace Maps.Backup.WorkFlowLib
                     string dbIP = context.ContextDic[ContextKeydbIP];
                     string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     string tempDir = context.ContextDic[ContextKeyBatTempDir];
+                    string devKSchema = context.ContextDic[ContextDevKSchema];
                     IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, tempDir, "");
                     IBackupService backupService = new PGBackupService(shellClient);
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
@@ -393,29 +396,29 @@ namespace Maps.Backup.WorkFlowLib
                         using (var conn = new NpgsqlConnection(connStr))
                         {
                             conn.Open();
-                            bool isK900002Exist = false;
-                            while (!isK900002Exist)
+                            bool isDevKSchemaExist = false;
+                            while (!isDevKSchemaExist)
                             {
                                 if (cancellationToken.IsCancellationRequested)
                                 {
                                     return;
                                 }
-                                string schemaSql = @"SELECT schema_name 
+                                string schemaSql = $@"SELECT schema_name 
                                    FROM information_schema.schemata 
                                    WHERE catalog_name = (SELECT current_database())
-                                    AND schema_name = 'k900002'
+                                    AND schema_name = '{devKSchema}'
                                    ORDER BY schema_name;";
                                 var qResult = conn.Query<string>(schemaSql).ToList();
                                 if (qResult != null && qResult.Count > 0)
                                 {
-                                    isK900002Exist = true;
+                                    isDevKSchemaExist = true;
                                 }
                                 else
                                 {
                                     Thread.Sleep(5000);
                                 }
                             }
-                            string dropSchemaSql = "DROP SCHEMA K900002 CASCADE;";
+                            string dropSchemaSql = $"DROP SCHEMA {devKSchema} CASCADE;";
                             conn.Execute(dropSchemaSql);
                         }
                     }, cancellationToken);
@@ -531,6 +534,7 @@ namespace Maps.Backup.WorkFlowLib
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
+                    string devKSchema = context.ContextDic[ContextDevKSchema];
                     string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     string schemaSql = @"SELECT schema_name 
                            FROM information_schema.schemata 
@@ -546,7 +550,7 @@ namespace Maps.Backup.WorkFlowLib
                             schema_nameList.AddRange(qResult);
                         }
                     }
-                    var targetKSchema = schema_nameList.FirstOrDefault(x => x.StartsWith("k") && x.Substring(1) != "900002");
+                    var targetKSchema = schema_nameList.FirstOrDefault(x => x.StartsWith("k") && x != devKSchema);
                     if (targetKSchema == null)
                     {
                         return new TaskNodeResult()
