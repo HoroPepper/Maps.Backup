@@ -198,11 +198,6 @@ namespace Maps.Backup.Shell
         #endregion
 
         #region 原有方法：命令拆分、键值对解析（仅解耦ParseCmdToKv，原逻辑保留）
-        private static Dictionary<string, string> ParseCmdToKv(string cmd)
-        {
-            var cmdParts = SplitCmdWithQuotes(cmd).Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
-            return ParseCmdToKvFromParts(cmdParts);
-        }
 
         private static List<string> SplitCmdWithQuotes(string cmd)
         {
