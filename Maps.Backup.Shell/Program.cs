@@ -63,7 +63,11 @@ namespace Maps.Backup.Shell
                 var taskMgt = workFlowCreater.Create();
                 taskMgt.ExecuteAllTasks(null, new TaskContext()
                 {
-                    ContextDic = finalConfig // 注入合并后的配置
+                    ContextDic = finalConfig, // 注入合并后的配置
+                    MessagePub = new DelegateStrMsgPub((msg) =>
+                    {
+                        Console.WriteLine(msg);
+                    })
                 });
                 Console.WriteLine("\n✅ 备份任务执行完成！");
             }

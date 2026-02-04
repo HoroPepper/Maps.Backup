@@ -88,6 +88,7 @@ namespace Maps.Backup.Core
                     if(context != null)
                     {
                         context.FlowState = TaskFlowState.Stoped;
+                        context.MessagePub?.PublishMsg($"任务节点执行异常，工作流终止，任务ID：{taskNode.TaskId}，异常信息：{ex.Message}");
                     }
                     break;
                 }
