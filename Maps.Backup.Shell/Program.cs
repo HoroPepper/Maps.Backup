@@ -244,7 +244,6 @@ namespace Maps.Backup.Shell
         {
             Console.WriteLine("\n===== Backup & Restore Tool Usage Help =====");
             Console.WriteLine("【Supported Main Commands】");
-            Console.WriteLine("  backup   - Execute backup operation (default if no command specified)");
             Console.WriteLine("  restore  - Execute restore operation");
             Console.WriteLine("  help     - Show this usage help information");
             Console.WriteLine("\n【Method 1: Config File (Recommended, backup-config.json in the same program directory)】");
