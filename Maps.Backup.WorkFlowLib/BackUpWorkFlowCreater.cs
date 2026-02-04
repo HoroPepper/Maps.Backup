@@ -692,7 +692,7 @@ namespace Maps.Backup.WorkFlowLib
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress(smtpUser,"Maps.Backup"),
+                From = new MailAddress(smtpUser,"Maps.BackupBot"),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = true,
