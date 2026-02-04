@@ -13,7 +13,7 @@ namespace Maps.Backup.Shell
     internal class Program
     {
         private const string ConfigFileName = "backup-config.json";
-        private static readonly List<string> SupportedCommands = new() { "restore", "help", "quit"};
+        private static readonly List<string> SupportedCommands = new() { "restore", "restore-email", "help", "quit"};
 
         static void Main(string[] args)
         {
