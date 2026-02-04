@@ -62,39 +62,54 @@ namespace Maps.Backup.Core
 
         public void ExecuteAllTasks(object param,TaskContext context)
         {
-            context.Nodes = GetAllTaskNodes();
-            context.FlowState = TaskFlowState.Running;
-            foreach (var taskNode in context.Nodes)
+            try
             {
-                if(taskNode == null)
+                context.Nodes = GetAllTaskNodes();
+                context.FlowState = TaskFlowState.Running;
+                foreach (var taskNode in context.Nodes)
                 {
-                    continue;
-                }
-                try
-                {
-                    if(context.FlowState == TaskFlowState.Stoped)
+                    if (taskNode == null)
+                    {
+                        continue;
+                    }
+                    if (context.FlowState == TaskFlowState.Stoped)
                     {
                         break;
                     }
                     BeforeTaskNodeExecuted?.Invoke(context, taskNode);
-                    var nodeResult = taskNode.Execute(context);
+                    TaskNodeResult taskNodeResult = new TaskNodeResult()
+                    {
+                        IsSuccess = false,
+                        Message = "Untrack Task Failed",
+                    };
+                    try
+                    {
+
+                        taskNodeResult = taskNode.Execute(context);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        taskNodeResult = new TaskNodeResult()
+                        {
+                            IsSuccess = false,
+                            Message = $"任务节点执行异常，任务ID：{taskNode.TaskId}，异常信息：{ex.Message}",
+                        };
+                    }
                     context.LastTaskNode = taskNode;
-                    context.LastTaskResult = nodeResult;
-                    context.NodeResultList[taskNode.TaskId] = nodeResult;
+                    context.LastTaskResult = taskNodeResult;
+                    context.NodeResultList[taskNode.TaskId] = taskNodeResult;
                     AfterTaskNodeExecuted?.Invoke(context);
                 }
-                catch(Exception ex)
-                {
-                    if(context != null)
-                    {
-                        context.FlowState = TaskFlowState.Stoped;
-                        context.MessagePub?.Publish($"任务节点执行异常，工作流终止，任务ID：{taskNode.TaskId}，异常信息：{ex.Message}");
-                    }
-                    break;
-                }
             }
-
-            context.FlowState = TaskFlowState.Finished;
+            catch(Exception ex)
+            {
+                context.MessagePub?.Publish($"任务流执行异常，异常信息：{ex.Message}");
+            }
+            finally
+            {
+                context.FlowState = TaskFlowState.Finished;
+            }
         }
     }
 }
