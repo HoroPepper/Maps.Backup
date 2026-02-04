@@ -708,7 +708,9 @@ namespace Maps.Backup.WorkFlowLib
             using var smtpClient = new SmtpClient(smtpServer, smtpPort)
             {
                 Credentials = new NetworkCredential(smtpUser, smtpPwd),
-                EnableSsl = smtpPort == 465,
+                UseDefaultCredentials = false,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                EnableSsl = true,
                 Timeout = 30000
             };
 
