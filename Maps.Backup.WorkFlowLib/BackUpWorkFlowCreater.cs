@@ -24,6 +24,22 @@ namespace Maps.Backup.WorkFlowLib
         public BackUpWorkFlowCreater(IMessagePub<string> messagePub)
         {
             _messagePub = messagePub;
+            RequiredKeys = new List<string>()
+            {
+                ContextKeyBackUpDir,
+                ContextKeyLocalSaveDir,
+                ContextKeyDbFileSaveDir,
+                ContextKeyTargetDbName,
+                ContextKeyDevBackup,
+                ContextKeySshIP,
+                ContextKeySshUName,
+                ContextKeySshPwd,
+                ContextKeyDbUName,
+                ContextKeydbPwd,
+                ContextKeydbIP,
+                ContextKeySqlPath,
+                ContextKeyBatTempDir,
+            };
         }
 
         public readonly string ContextKeyBackUpDir = "backUpDir";
@@ -40,6 +56,7 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeySqlPath = "sqlPath";
         public readonly string ContextKeyBatTempDir = "batTempDir";
 
+        public List<string> RequiredKeys { get; set; } = new List<string>();
         public TaskFlow Create()
         {
             TaskFlow taskFlow = new TaskFlow();

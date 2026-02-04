@@ -54,21 +54,6 @@ namespace Maps.Backup.Shell
                 }
                 else if (mainCommand.Equals("restore", StringComparison.OrdinalIgnoreCase))
                 {
-                    List<string> requiredKeys = new List<string>
-                    {
-                        "backUpDir",
-                        "localSaveDir",
-                        "dbFileSaveDir",
-                        "targetDbName"
-                    };
-                    var missingKeys = requiredKeys
-                        .Where(k => !finalConfig.ContainsKey(k) || string.IsNullOrWhiteSpace(finalConfig[k]))
-                        .ToList();
-                    if (missingKeys.Any())
-                    {
-                        Console.WriteLine($"\nError: Missing required configuration items for [{mainCommand}] -> {string.Join(", ", missingKeys)}");
-                        return;
-                    }
                     try
                     {
                         Console.WriteLine($"\nStarting restore task execution...");
@@ -77,6 +62,14 @@ namespace Maps.Backup.Shell
                             Console.WriteLine(msg);
                         });
                         BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater(msgPub);
+                        var missingKeys = workFlowCreater.RequiredKeys
+                       .Where(k => !finalConfig.ContainsKey(k) || string.IsNullOrWhiteSpace(finalConfig[k]))
+                       .ToList();
+                        if (missingKeys.Any())
+                        {
+                            Console.WriteLine($"\nError: Missing required configuration items for [{mainCommand}] -> {string.Join(", ", missingKeys)}");
+                            return;
+                        }
                         var taskMgt = workFlowCreater.Create();
                         taskMgt.ExecuteAllTasks(null, new TaskContext()
                         {
