@@ -52,16 +52,17 @@ namespace Maps.Backup.Shell
                 {
                     isQuit = true;
                 }
-                else if (mainCommand.Equals("restore", StringComparison.OrdinalIgnoreCase))
+                else if (mainCommand.Equals("restore", StringComparison.OrdinalIgnoreCase) || mainCommand.Equals("restore-email", StringComparison.OrdinalIgnoreCase))
                 {
                     try
                     {
+                        bool isEmailNotify = mainCommand.Equals("restore-email", StringComparison.OrdinalIgnoreCase);
                         Console.WriteLine($"\nStarting restore task execution...");
                         var msgPub = new DelegateStrMsgPub((msg) =>
                         {
                             Console.WriteLine(msg);
                         });
-                        BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater(msgPub);
+                        BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater(msgPub, isEmailNotify);
                         var missingKeys = workFlowCreater.RequiredKeys
                        .Where(k => !finalConfig.ContainsKey(k) || string.IsNullOrWhiteSpace(finalConfig[k]))
                        .ToList();

@@ -11,6 +11,8 @@ using Renci.SshNet.Sftp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,9 +23,12 @@ namespace Maps.Backup.WorkFlowLib
     public class BackUpWorkFlowCreater
     {
         private readonly IMessagePub<string> _messagePub;
-        public BackUpWorkFlowCreater(IMessagePub<string> messagePub)
+        private readonly bool _isEmailNotify;
+        public BackUpWorkFlowCreater(IMessagePub<string> messagePub, bool isEmailNotify)
         {
             _messagePub = messagePub;
+            _isEmailNotify = isEmailNotify;
+
             RequiredKeys = new List<string>()
             {
                 ContextKeyBackUpDir,
@@ -40,6 +45,10 @@ namespace Maps.Backup.WorkFlowLib
                 ContextKeySqlPath,
                 ContextKeyBatTempDir,
             };
+            if(_isEmailNotify)
+            {
+                RequiredKeys.AddRange(EmailRequiredKeys);
+            }
         }
 
         public readonly string ContextKeyBackUpDir = "backUpDir";
@@ -55,8 +64,23 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeydbIP = "dbIP";
         public readonly string ContextKeySqlPath = "sqlPath";
         public readonly string ContextKeyBatTempDir = "batTempDir";
+        public readonly string ContextKeySmtpServer = "smtpServer";    
+        public readonly string ContextKeySmtpPort = "smtpPort";       
+        public readonly string ContextKeySmtpUser = "smtpUser";       
+        public readonly string ContextKeySmtpPwd = "smtpPwd";         
+        public readonly string ContextKeyRecvEmails = "recvEmails";    
+        public readonly string ContextKeyEmailSubject = "emailSubject";
 
         public List<string> RequiredKeys { get; set; } = new List<string>();
+
+        private List<string> EmailRequiredKeys => new List<string>()
+        {
+            ContextKeySmtpServer,
+            ContextKeySmtpPort,
+            ContextKeySmtpUser,
+            ContextKeySmtpPwd,
+            ContextKeyRecvEmails,
+        };
         public TaskFlow Create()
         {
             TaskFlow taskFlow = new TaskFlow();
@@ -68,6 +92,10 @@ namespace Maps.Backup.WorkFlowLib
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateDevBackupRestoreTaskNode());
             taskFlow.AddTaskNode(CreateCustomerFieldUpdateTaskNode());
+            if(_isEmailNotify)
+            {
+                taskFlow.AddTaskNode(CreateEmailSendTaskNode());
+            }
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
@@ -561,6 +589,131 @@ namespace Maps.Backup.WorkFlowLib
             };
 
             return restoreNode;
+        }
+
+        /// <summary>
+        /// 创建邮箱发送任务节点（工作流末尾执行，不依赖前序节点结果）
+        /// </summary>
+        /// <returns>邮箱发送任务节点</returns>
+        private IWorkTaskNode CreateEmailSendTaskNode()
+        {
+            IWorkTaskNode emailNode = new DelegateTaskNode()
+            {
+                TaskId = "workflow-email-send",
+                TaskName = "Send Workflow Summary Email",
+                TaskType = "email-notify",
+                DelegateFunc = (context) =>
+                {
+                    try
+                    {
+                        string smtpServer = context.ContextDic[ContextKeySmtpServer];
+                        int smtpPort = int.Parse(context.ContextDic[ContextKeySmtpPort]);
+                        string smtpUser = context.ContextDic[ContextKeySmtpUser];
+                        string smtpPwd = context.ContextDic[ContextKeySmtpPwd];
+                        string recvEmails = context.ContextDic[ContextKeyRecvEmails];
+                        string emailSubject = context.ContextDic.ContainsKey(ContextKeyEmailSubject)
+                            ? context.ContextDic[ContextKeyEmailSubject]
+                            : $"【备份工作流】执行摘要 - {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+
+                        // 2. 统计所有任务节点执行结果
+                        int totalTask = context.NodeResultList.Count;
+                        int successTask = context.NodeResultList.Values.Count(r => r.IsSuccess);
+                        int failTask = totalTask - successTask;
+                        // 工作流整体状态：所有任务成功则为成功，否则失败
+                        string workflowStatus = failTask == 0 ? "✅ 执行成功" : "❌ 执行失败（部分节点出错）";
+
+                        // 3. 构建详细的任务执行明细（HTML格式，排版清晰）
+                        StringBuilder taskDetailBuilder = new StringBuilder();
+                        taskDetailBuilder.Append("<table border='1' cellpadding='8' cellspacing='0' style='border-collapse:collapse;width:100%;'>");
+                        taskDetailBuilder.Append("<tr style='background:#f5f5f5;'><th>任务ID</th><th>任务名称</th><th>执行状态</th><th>执行消息</th></tr>");
+                        foreach (var kv in context.NodeResultList)
+                        {
+                            string taskId = kv.Key;
+                            TaskNodeResult result = kv.Value;
+                            string status = result.IsSuccess ? "<span style='color:green;'>成功</span>" : "<span style='color:red;'>失败</span>";
+                            string message = string.IsNullOrWhiteSpace(result.Message) ? "无消息" : result.Message.Replace("\r\n", "<br/>");
+                            string taskName = context.Nodes.FirstOrDefault(n => n.TaskId == taskId)?.TaskName ?? "未知任务";
+                            taskDetailBuilder.AppendFormat("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>",
+                                taskId, taskName, status, message);
+                        }
+                        taskDetailBuilder.Append("</table>");
+
+                        string emailBody = $@"
+                        <h3>备份工作流执行摘要</h3>
+                        <p><strong>执行时间：</strong>{DateTime.Now:yyyy-MM-dd HH:mm:ss}</p>
+                        <p><strong>整体状态：</strong>{workflowStatus}</p>
+                        <p><strong>任务统计：</strong>总任务{totalTask}个 | 成功{successTask}个 | 失败{failTask}个</p>
+                        <h4>任务执行明细：</h4>
+                        {taskDetailBuilder.ToString()}
+                        <p style='margin-top:20px;color:#666;'>此邮件由系统自动发送，无需回复</p>";
+
+                        // 5. 发送邮件
+                        var sendSuccess = SendWorkflowSummaryEmail(
+                            smtpServer, smtpPort, smtpUser, smtpPwd, recvEmails, emailSubject, emailBody);
+
+                        // 6. 返回任务节点结果
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = sendSuccess,
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = $"邮箱任务执行异常：{ex.Message}"
+                        };
+                    }
+                }
+            };
+
+            return emailNode;
+        }
+
+        private bool SendWorkflowSummaryEmail(
+        string smtpServer, int smtpPort, string smtpUser, string smtpPwd,
+        string recvEmails, string subject, string body)
+        {
+            if (string.IsNullOrWhiteSpace(recvEmails))
+            {
+                return false;
+            }
+            var toAddresses = recvEmails.Split(',', ';')
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x));
+            if (!toAddresses.Any())
+            {
+                return false;
+            }
+
+
+            var mailMessage = new MailMessage
+            {
+                From = new MailAddress(smtpUser),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true,
+                SubjectEncoding = Encoding.UTF8,
+                BodyEncoding = Encoding.UTF8
+            };
+
+            foreach (var email in toAddresses)
+            {
+                mailMessage.To.Add(new MailAddress(email));
+            }
+
+            using var smtpClient = new SmtpClient(smtpServer, smtpPort)
+            {
+                Credentials = new NetworkCredential(smtpUser, smtpPwd),
+                EnableSsl = smtpPort == 465,
+                Timeout = 30000
+            };
+
+            smtpClient.Send(mailMessage);
+            return true;
         }
     }
 }
