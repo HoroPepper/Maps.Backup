@@ -31,30 +31,26 @@ namespace Maps.Backup.Shell
 
                 string mainCommand = string.Empty;
                 Dictionary<string, string> configFromCmd = new Dictionary<string, string>();
-                var finalConfig = MergeConfig(configFromFile, configFromCmd);
-
                 if (!string.IsNullOrWhiteSpace(inputCmd))
                 {
                     var cmdParseResult = SplitMainCommandAndKvParams(inputCmd);
                     mainCommand = cmdParseResult.MainCommand;
                     configFromCmd = cmdParseResult.KvParams;
                 }
+                var finalConfig = MergeConfig(configFromFile, configFromCmd);
+
                 if (!SupportedCommands.Contains(mainCommand, StringComparer.OrdinalIgnoreCase))
                 {
                     Console.WriteLine($"\nError: Unsupported command -> {mainCommand}");
                     Console.WriteLine($"Supported commands: {string.Join(", ", SupportedCommands)}");
-                    ShowHelpInfo();
-                    return;
                 }
                 else if (mainCommand.Equals("help", StringComparison.OrdinalIgnoreCase))
                 {
                     ShowHelpInfo();
-                    continue;
                 }
                 else if(mainCommand.Equals("quit", StringComparison.OrdinalIgnoreCase))
                 {
                     isQuit = true;
-                    continue;
                 }
                 else if (mainCommand.Equals("restore", StringComparison.OrdinalIgnoreCase))
                 {
@@ -94,6 +90,11 @@ namespace Maps.Backup.Shell
                         Console.WriteLine($"\n X restore task execution failed: {ex.Message}");
                         Console.WriteLine($"Exception details: {ex.StackTrace}");
                     }
+                }
+                else
+                {
+                    Console.WriteLine($"\nError: Unsupported command -> {mainCommand}");
+                    Console.WriteLine($"Supported commands: {string.Join(", ", SupportedCommands)}");
                 }
                 
             }
