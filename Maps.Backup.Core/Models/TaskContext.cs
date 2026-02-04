@@ -39,7 +39,7 @@ namespace Maps.Backup.Core.Models
         /// </summary>
         public TaskFlowState FlowState { get; set; } = TaskFlowState.NotStarted;
 
-        public IMessagePub MessagePub { get; set; }
+        public IMessagePub<string> MessagePub { get; set; }
     }
 
     public enum TaskFlowState

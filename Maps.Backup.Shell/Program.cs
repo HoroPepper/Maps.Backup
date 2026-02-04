@@ -13,118 +13,132 @@ namespace Maps.Backup.Shell
     internal class Program
     {
         private const string ConfigFileName = "backup-config.json";
+        private static readonly List<string> SupportedCommands = new() { "restore", "help", "quit"};
 
         static void Main(string[] args)
         {
             var configFromFile = LoadConfigFromJson();
 
-            Console.WriteLine("===== Backup Tool =====");
+            Console.WriteLine("===== Backup & Restore Tool =====");
             Console.WriteLine($"Attempted to load config file: {Path.Combine(Environment.CurrentDirectory, ConfigFileName)}");
             Console.WriteLine("Note: Command line parameters will override items with the same name in the config file. Press Enter directly to use only the config file settings.\n");
-            Console.WriteLine("Please enter backup command (format: --backUpDir path --localSaveDir path ...):");
-            string inputCmd = Console.ReadLine();
+            Console.WriteLine("Please enter operation command (format: [restore/help] --backUpDir path --localSaveDir path ...):");
 
-            var configFromCmd = string.IsNullOrWhiteSpace(inputCmd)
-                ? new Dictionary<string, string>()
-                : ParseCmdToKv(inputCmd);
-
-            var finalConfig = MergeConfig(configFromFile, configFromCmd);
-
-            List<string> requiredKeys = new List<string>
+            bool isQuit = false;
+            while(!isQuit)
             {
-                "backUpDir",
-                "localSaveDir",
-                "dbFileSaveDir",
-                "targetDbName"
-            };
+                string inputCmd = Console.ReadLine();
 
+                string mainCommand = string.Empty;
+                Dictionary<string, string> configFromCmd = new Dictionary<string, string>();
+                var finalConfig = MergeConfig(configFromFile, configFromCmd);
 
-            var missingKeys = requiredKeys
-                .Where(k => !finalConfig.ContainsKey(k) || string.IsNullOrWhiteSpace(finalConfig[k]))
-                .ToList();
-            if (missingKeys.Any())
-            {
-                Console.WriteLine($"\nError: Missing required configuration items -> {string.Join(", ", missingKeys)}");
-                ShowHelpInfo();
-                return;
-            }
-
-            try
-            {
-                Console.WriteLine("\nStarting backup task execution...");
-                var msgPub = new DelegateStrMsgPub((msg) =>
+                if (!string.IsNullOrWhiteSpace(inputCmd))
                 {
-                    Console.WriteLine(msg);
-                });
-                BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater(msgPub);
-                var taskMgt = workFlowCreater.Create();
-                taskMgt.ExecuteAllTasks(null, new TaskContext()
+                    var cmdParseResult = SplitMainCommandAndKvParams(inputCmd);
+                    mainCommand = cmdParseResult.MainCommand;
+                    configFromCmd = cmdParseResult.KvParams;
+                }
+                if (!SupportedCommands.Contains(mainCommand, StringComparer.OrdinalIgnoreCase))
                 {
-                    ContextDic = finalConfig, 
-                    MessagePub = msgPub,
-                });
-                Console.WriteLine("\n✅ Backup task execution completed!");
+                    Console.WriteLine($"\nError: Unsupported command -> {mainCommand}");
+                    Console.WriteLine($"Supported commands: {string.Join(", ", SupportedCommands)}");
+                    ShowHelpInfo();
+                    return;
+                }
+                else if (mainCommand.Equals("help", StringComparison.OrdinalIgnoreCase))
+                {
+                    ShowHelpInfo();
+                    continue;
+                }
+                else if(mainCommand.Equals("quit", StringComparison.OrdinalIgnoreCase))
+                {
+                    isQuit = true;
+                    continue;
+                }
+                else if (mainCommand.Equals("restore", StringComparison.OrdinalIgnoreCase))
+                {
+                    List<string> requiredKeys = new List<string>
+                    {
+                        "backUpDir",
+                        "localSaveDir",
+                        "dbFileSaveDir",
+                        "targetDbName"
+                    };
+                    var missingKeys = requiredKeys
+                        .Where(k => !finalConfig.ContainsKey(k) || string.IsNullOrWhiteSpace(finalConfig[k]))
+                        .ToList();
+                    if (missingKeys.Any())
+                    {
+                        Console.WriteLine($"\nError: Missing required configuration items for [{mainCommand}] -> {string.Join(", ", missingKeys)}");
+                        return;
+                    }
+                    try
+                    {
+                        Console.WriteLine($"\nStarting restore task execution...");
+                        var msgPub = new DelegateStrMsgPub((msg) =>
+                        {
+                            Console.WriteLine(msg);
+                        });
+                        BackUpWorkFlowCreater workFlowCreater = new BackUpWorkFlowCreater(msgPub);
+                        var taskMgt = workFlowCreater.Create();
+                        taskMgt.ExecuteAllTasks(null, new TaskContext()
+                        {
+                            ContextDic = finalConfig,
+                            MessagePub = msgPub,
+                        });
+                        Console.WriteLine($"\n V restore task execution completed!");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"\n X restore task execution failed: {ex.Message}");
+                        Console.WriteLine($"Exception details: {ex.StackTrace}");
+                    }
+                }
+                
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\n❌ Backup task execution failed: {ex.Message}");
-            }
-
+            
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();
         }
 
-        #region Core new methods: JSON loading, config merging
-
-        private static Dictionary<string, string> LoadConfigFromJson()
+        #region 新增核心方法：拆分首位命令和后续键值对参数
+        /// <summary>
+        /// 拆分输入命令：首位无--的主命令 + 后续--开头的键值对参数
+        /// </summary>
+        /// <param name="cmd">原始输入命令</param>
+        /// <returns>主命令 + 键值对参数字典</returns>
+        private static ShellCommand SplitMainCommandAndKvParams(string cmd)
         {
-            try
+            string mainCommand = string.Empty;
+            var allParts = SplitCmdWithQuotes(cmd).Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+
+            if (allParts.Count > 0)
             {
-                string configPath = Path.Combine(Environment.CurrentDirectory, ConfigFileName);
-                if (!File.Exists(configPath))
+                // 首位不是--开头，判定为主命令
+                if (!allParts[0].StartsWith("--"))
                 {
-                    Console.WriteLine($"Note: Config file does not exist, will only use command line parameters");
-                    return new Dictionary<string, string>();
+                    mainCommand = allParts[0].ToLower();
+                    // 移除主命令，剩余部分作为键值对参数解析
+                    allParts.RemoveAt(0);
                 }
-
-                // Read file content and deserialize to dictionary
-                string jsonContent = File.ReadAllText(configPath);
-                var configDic = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonContent, new JsonSerializerOptions
-                {
-                    AllowTrailingCommas = true, // Support trailing commas in JSON
-                    ReadCommentHandling = JsonCommentHandling.Skip // Ignore JSON comments
-                });
-
-                return configDic ?? new Dictionary<string, string>();
             }
-            catch (Exception ex)
+
+            // 解析剩余部分为键值对（复用原有ParseCmdToKv逻辑，适配拆分后的参数）
+            var kvParams = ParseCmdToKvFromParts(allParts);
+            return new ShellCommand()
             {
-                Console.WriteLine($"Warning: Failed to load/parse config file, will only use command line parameters | Error: {ex.Message}");
-                return new Dictionary<string, string>();
-            }
+                MainCommand = mainCommand,
+                KvParams = kvParams,
+            };
         }
 
-        private static Dictionary<string, string> MergeConfig(Dictionary<string, string> fileConfig, Dictionary<string, string> cmdConfig)
-        {
-            // First copy basic config from config file
-            var finalConfig = new Dictionary<string, string>(fileConfig);
-            // Traverse command line config, override same-name items, add new items directly
-            foreach (var kv in cmdConfig)
-            {
-                if (string.IsNullOrWhiteSpace(kv.Key)) continue;
-                finalConfig[kv.Key] = kv.Value?.Trim() ?? string.Empty;
-            }
-            return finalConfig;
-        }
-        #endregion
-
-        #region Original core methods: Command parsing, help prompt, split with quotes
-
-        private static Dictionary<string, string> ParseCmdToKv(string cmd)
+        /// <summary>
+        /// 从拆分后的参数列表解析键值对（复用原有逻辑，解耦字符串输入）
+        /// </summary>
+        private static Dictionary<string, string> ParseCmdToKvFromParts(List<string> cmdParts)
         {
             Dictionary<string, string> kvDic = new Dictionary<string, string>();
-            var cmdParts = SplitCmdWithQuotes(cmd).Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
-
             for (int i = 0; i < cmdParts.Count; i++)
             {
                 if (cmdParts[i].StartsWith("--") && cmdParts[i].Length > 2)
@@ -138,8 +152,55 @@ namespace Maps.Backup.Shell
                     }
                 }
             }
-
             return kvDic;
+        }
+        #endregion
+
+        #region 原有核心方法：JSON加载、配置合并（无修改）
+        private static Dictionary<string, string> LoadConfigFromJson()
+        {
+            try
+            {
+                string configPath = Path.Combine(Environment.CurrentDirectory, ConfigFileName);
+                if (!File.Exists(configPath))
+                {
+                    Console.WriteLine($"Note: Config file does not exist, will only use command line parameters");
+                    return new Dictionary<string, string>();
+                }
+
+                string jsonContent = File.ReadAllText(configPath);
+                var configDic = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonContent, new JsonSerializerOptions
+                {
+                    AllowTrailingCommas = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
+                });
+
+                return configDic ?? new Dictionary<string, string>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Failed to load/parse config file, will only use command line parameters | Error: {ex.Message}");
+                return new Dictionary<string, string>();
+            }
+        }
+
+        private static Dictionary<string, string> MergeConfig(Dictionary<string, string> fileConfig, Dictionary<string, string> cmdConfig)
+        {
+            var finalConfig = new Dictionary<string, string>(fileConfig);
+            foreach (var kv in cmdConfig)
+            {
+                if (string.IsNullOrWhiteSpace(kv.Key)) continue;
+                finalConfig[kv.Key] = kv.Value?.Trim() ?? string.Empty;
+            }
+            return finalConfig;
+        }
+        #endregion
+
+        #region 原有方法：命令拆分、键值对解析（仅解耦ParseCmdToKv，原逻辑保留）
+        private static Dictionary<string, string> ParseCmdToKv(string cmd)
+        {
+            var cmdParts = SplitCmdWithQuotes(cmd).Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+            return ParseCmdToKvFromParts(cmdParts);
         }
 
         private static List<string> SplitCmdWithQuotes(string cmd)
@@ -176,23 +237,33 @@ namespace Maps.Backup.Shell
 
             return parts;
         }
+        #endregion
 
+        #region 改造HelpInfo：更新使用说明，包含新命令
         private static void ShowHelpInfo()
         {
-            Console.WriteLine("\n===== Backup Tool Usage Help =====");
-            Console.WriteLine("【Method 1: Config File (Recommended, backup-config.json in the same directory as the program)】");
-            Console.WriteLine("JSON format example:");
+            Console.WriteLine("\n===== Backup & Restore Tool Usage Help =====");
+            Console.WriteLine("【Supported Main Commands】");
+            Console.WriteLine("  backup   - Execute backup operation (default if no command specified)");
+            Console.WriteLine("  restore  - Execute restore operation");
+            Console.WriteLine("  help     - Show this usage help information");
+            Console.WriteLine("\n【Method 1: Config File (Recommended, backup-config.json in the same program directory)】");
+            Console.WriteLine("JSON format example (supports both backup/restore):");
             Console.WriteLine("{");
             Console.WriteLine("  \"backUpDir\": \"/data/backup\",");
             Console.WriteLine("  \"localSaveDir\": \"D:\\\\backup\\\\local\",");
             Console.WriteLine("  \"dbFileSaveDir\": \"D:\\\\backup\\\\db\",");
             Console.WriteLine("  \"targetDbName\": \"map_backup_db\"");
             Console.WriteLine("}");
-            Console.WriteLine("\n【Method 2: Command Line Parameters (Can override config file)】");
-            Console.WriteLine("Format: --backUpDir path --localSaveDir path --dbFileSaveDir path --targetDbName db_name");
-            Console.WriteLine("Example: --backUpDir /data/backup --localSaveDir \"D:\\\\My Backup\\\\local\" --targetDbName map_db");
-            Console.WriteLine("【Priority】Command line parameters > JSON config file");
-            Console.WriteLine("===========================\n");
+            Console.WriteLine("\n【Method 2: Command Line Parameters (Overrides config file items with the same name)】");
+            Console.WriteLine("Basic Format: [main-command] --key1 value1 --key2 value2 ...");
+            Console.WriteLine("Examples:");
+            Console.WriteLine("  1. Backup (default): --backUpDir /data/backup --localSaveDir \"D:\\\\My Backup\"");
+            Console.WriteLine("  2. Restore: restore --backUpDir /data/backup --localSaveDir \"D:\\\\My Backup\"");
+            Console.WriteLine("  3. Direct help: help");
+            Console.WriteLine("\n【Priority】Command line parameters > JSON config file");
+            Console.WriteLine("【Note】All commands share the same required configuration items for now");
+            Console.WriteLine("==============================================\n");
         }
         #endregion
     }
