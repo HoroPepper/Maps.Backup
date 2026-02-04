@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
@@ -52,14 +53,14 @@ namespace Maps.Backup.WorkFlowLib
 
             taskFlow.BeforeTaskNodeExecuted += (context, node) =>
             {
-                _messagePub.Publish($"开始执行任务节点[{node.TaskName}]...");
+                _messagePub.Publish($"Start executing task node [{node.TaskName}]...");
             };
 
             taskFlow.AfterTaskNodeExecuted += (context) =>
             {
-                if(context.LastTaskNode != null && context.LastTaskResult != null)
+                if (context.LastTaskNode != null && context.LastTaskResult != null)
                 {
-                    _messagePub.Publish($"任务节点[{context.LastTaskNode}]执行完成，结果：{(context.LastTaskResult.IsSuccess ? "成功" : "失败")}，信息：{context.LastTaskResult.Message}");
+                    _messagePub.Publish($"Task node [{context.LastTaskNode}] execution completed, result: {(context.LastTaskResult.IsSuccess ? "Success" : "Failed")}, message: {context.LastTaskResult.Message}");
                 }
             };
             return taskFlow;
@@ -108,17 +109,17 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode downLoadNode = new DelegateTaskNode()
             {
                 TaskId = "backup-down",
-                TaskName = "下载Backup文件",
+                TaskName = "Download Backup Files",
                 TaskType = "download",
                 DelegateFunc = (context) =>
                 {
-                    if(context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
                     {
                         return new TaskNodeResult()
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "上游任务失败",
+                            Message = "Upstream task failed",
                         };
                     }
                     IFileService backUpFileService = new WinSharedFileService();
@@ -129,7 +130,7 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         ResultData = downloadFiles,
                         IsSuccess = true,
-                        Message = "backup文件下载成功",
+                        Message = "Backup files downloaded successfully",
                     };
                 }
             };
@@ -142,7 +143,7 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode unZipNode = new DelegateTaskNode()
             {
                 TaskId = "backup-unzip",
-                TaskName = "解压Backup文件",
+                TaskName = "Unzip Backup Files",
                 TaskType = "unzip",
                 DelegateFunc = (context) =>
                 {
@@ -152,7 +153,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "上游任务失败",
+                            Message = "Upstream task failed",
                         };
                     }
                     if (context.NodeResultList.TryGetValue("backup-down", out TaskNodeResult nodeResult))
@@ -173,7 +174,7 @@ namespace Maps.Backup.WorkFlowLib
                             {
                                 ResultData = unzipFiles,
                                 IsSuccess = true,
-                                Message = "backup文件解压成功",
+                                Message = "Backup files unzipped successfully",
                             };
                         }
                     }
@@ -182,7 +183,7 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         ResultData = null,
                         IsSuccess = false,
-                        Message = "前下载节点文件丢失",
+                        Message = "Files from previous download node are missing",
                     };
                 }
             };
@@ -196,7 +197,7 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode upLoadNode = new DelegateTaskNode()
             {
                 TaskId = "backup-upload",
-                TaskName = "上传Backup文件",
+                TaskName = "Upload Backup Files",
                 TaskType = "upload",
                 DelegateFunc = (context) =>
                 {
@@ -206,7 +207,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "上游任务失败",
+                            Message = "Upstream task failed",
                         };
                     }
                     string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
@@ -216,7 +217,7 @@ namespace Maps.Backup.WorkFlowLib
                     string ssPwd = context.ContextDic[ContextKeySshPwd];
                     List<IFile> upLoadFiles = new List<IFile>();
                     IFileService localFileService = new LocalFileService();
-                    IFileService dbFileService = new SSHFileService(sshIP,22,ssUName,ssPwd);
+                    IFileService dbFileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
                     upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
                     {
                         RootPath = localSaveDir,
@@ -233,13 +234,13 @@ namespace Maps.Backup.WorkFlowLib
                     List<IFile> result = new List<IFile>();
                     foreach (var file in upLoadFiles)
                     {
-                        result.Add(dbFileService.Upload(file, new SFTPFile(dbFileSaveDir,false)));
+                        result.Add(dbFileService.Upload(file, new SFTPFile(dbFileSaveDir, false)));
                     }
                     return new TaskNodeResult()
                     {
                         ResultData = result,
                         IsSuccess = true,
-                        Message = "backup文件上传成功",
+                        Message = "Backup files uploaded successfully",
                     };
                 }
             };
@@ -252,7 +253,7 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode restoreNode = new DelegateTaskNode()
             {
                 TaskId = "backup-restore",
-                TaskName = "恢复Backup文件",
+                TaskName = "Restore Backup Files",
                 TaskType = "db-restore",
                 DelegateFunc = (context) =>
                 {
@@ -262,7 +263,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "上游任务失败",
+                            Message = "Upstream task failed",
                         };
                     }
                     if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
@@ -285,7 +286,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = true,
-                            Message = "backup文件恢复成功",
+                            Message = "Backup files restored successfully",
                         };
                     }
 
@@ -293,7 +294,7 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         ResultData = null,
                         IsSuccess = false,
-                        Message = "backup文件恢复失败",
+                        Message = "Failed to restore backup files",
                     };
 
                 }
@@ -307,7 +308,7 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode restoreNode = new DelegateTaskNode()
             {
                 TaskId = "backup-devRestore",
-                TaskName = "恢复开发环境backup文件",
+                TaskName = "Restore Development Environment Backup Files",
                 TaskType = "db-restore",
                 DelegateFunc = (context) =>
                 {
@@ -317,7 +318,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "上游任务失败",
+                            Message = "Upstream task failed",
                         };
                     }
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
@@ -339,7 +340,7 @@ namespace Maps.Backup.WorkFlowLib
 
                     using var cts = new CancellationTokenSource();
                     CancellationToken cancellationToken = cts.Token;
-                    Task.Run(() =>{
+                    Task.Run(() => {
 
                         using (var conn = new NpgsqlConnection(connStr))
                         {
@@ -347,7 +348,7 @@ namespace Maps.Backup.WorkFlowLib
                             bool isK900002Exist = false;
                             while (!isK900002Exist)
                             {
-                                if(cancellationToken.IsCancellationRequested)
+                                if (cancellationToken.IsCancellationRequested)
                                 {
                                     return;
                                 }
@@ -369,7 +370,7 @@ namespace Maps.Backup.WorkFlowLib
                             string dropSchemaSql = "DROP SCHEMA K900002 CASCADE;";
                             conn.Execute(dropSchemaSql);
                         }
-                    },cancellationToken);
+                    }, cancellationToken);
                     try
                     {
                         foreach (var file in files)
@@ -381,7 +382,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = true,
-                            Message = "dev-backup文件恢复成功",
+                            Message = "Dev backup files restored successfully",
                         };
                     }
                     finally
@@ -391,7 +392,7 @@ namespace Maps.Backup.WorkFlowLib
                             cts.Cancel();
                         }
                     }
-                    
+
 
                 }
             };
@@ -404,7 +405,7 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode restoreNode = new DelegateTaskNode()
             {
                 TaskId = "db_create",
-                TaskName = "创建数据库",
+                TaskName = "Create Database",
                 TaskType = "db-create",
                 DelegateFunc = (context) =>
                 {
@@ -418,13 +419,13 @@ namespace Maps.Backup.WorkFlowLib
                     IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
                     var result = shellClient.Execute($@"set PGPASSWORD={dbPwd}
                     createdb -h localhost -p 5432 -U {dbUName} -w {targetDbName} ");
-                    if(result.IsSuccess || result.StandardError.Contains("already exists"))
+                    if (result.IsSuccess || result.StandardError.Contains("already exists"))
                     {
                         return new TaskNodeResult()
                         {
                             ResultData = null,
                             IsSuccess = true,
-                            Message = "数据库创建成功",
+                            Message = "Database created successfully",
                         };
                     }
                     else
@@ -433,7 +434,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = $"数据库创建失败，错误信息：{result.StandardError}",
+                            Message = $"Failed to create database, error message: {result.StandardError}",
                         };
                     }
 
@@ -448,7 +449,7 @@ namespace Maps.Backup.WorkFlowLib
             IWorkTaskNode restoreNode = new DelegateTaskNode()
             {
                 TaskId = "backup-customerUpdate",
-                TaskName = "更新字段",
+                TaskName = "Update Fields",
                 TaskType = "db-sql",
                 DelegateFunc = (context) =>
                 {
@@ -458,7 +459,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "上游任务失败",
+                            Message = "Upstream task failed",
                         };
                     }
                     string sqlPath = context.ContextDic[ContextKeySqlPath];
@@ -467,13 +468,13 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         FullPath = sqlPath,
                     }).FirstOrDefault();
-                    if(sqlFile == null)
+                    if (sqlFile == null)
                     {
                         return new TaskNodeResult()
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "SQL文件未找到",
+                            Message = "SQL file not found",
                         };
                     }
                     string fileContent = File.ReadAllText(sqlFile.Path);
@@ -491,19 +492,19 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         conn.Open();
                         var qResult = conn.Query<string>(schemaSql).ToList();
-                        if(qResult != null && qResult.Count > 0)
+                        if (qResult != null && qResult.Count > 0)
                         {
                             schema_nameList.AddRange(qResult);
                         }
                     }
                     var targetKSchema = schema_nameList.FirstOrDefault(x => x.StartsWith("k") && x.Substring(1) != "900002");
-                    if (targetKSchema ==  null)
+                    if (targetKSchema == null)
                     {
                         return new TaskNodeResult()
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = "字段更新失败",
+                            Message = "Field update failed",
                         };
                     }
                     string targetCustomerSeq = targetKSchema.Substring(1);
@@ -512,14 +513,14 @@ namespace Maps.Backup.WorkFlowLib
                         conn.Open();
                         string executeSql = fileContent.Replace("{customerSeq}", targetCustomerSeq);
                         executeSql = executeSql.Replace("{dbName}", targetDbName);
-                        var qResult = conn.Execute(executeSql,commandTimeout:0);
-                        if(qResult >= 0)
+                        var qResult = conn.Execute(executeSql, commandTimeout: 0);
+                        if (qResult >= 0)
                         {
                             return new TaskNodeResult()
                             {
                                 ResultData = null,
                                 IsSuccess = true,
-                                Message = "字段更新成功",
+                                Message = "Fields updated successfully",
                             };
                         }
                         else
@@ -528,7 +529,7 @@ namespace Maps.Backup.WorkFlowLib
                             {
                                 ResultData = null,
                                 IsSuccess = false,
-                                Message = "字段更新失败",
+                                Message = "Field update failed",
                             };
                         }
 
