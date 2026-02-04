@@ -566,6 +566,7 @@ namespace Maps.Backup.WorkFlowLib
                         conn.Open();
                         string executeSql = fileContent.Replace("{customerSeq}", targetCustomerSeq);
                         executeSql = executeSql.Replace("{dbName}", targetDbName);
+                        executeSql = executeSql.Replace("{devCustomerSeq}", devCustomerSeq);
                         var qResult = conn.Execute(executeSql, commandTimeout: 0);
                         if (qResult >= 0)
                         {
