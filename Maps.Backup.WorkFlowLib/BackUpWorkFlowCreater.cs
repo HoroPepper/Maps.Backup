@@ -130,7 +130,7 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         ResultData = downloadFiles,
                         IsSuccess = true,
-                        Message = "Backup files downloaded successfully",
+                        Message = $"Backup {downloadFiles.Count} files downloaded successfully",
                     };
                 }
             };
@@ -174,7 +174,7 @@ namespace Maps.Backup.WorkFlowLib
                             {
                                 ResultData = unzipFiles,
                                 IsSuccess = true,
-                                Message = "Backup files unzipped successfully",
+                                Message = $"Backup {unzipFiles.Count} files unzipped successfully",
                             };
                         }
                     }
@@ -240,7 +240,7 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         ResultData = result,
                         IsSuccess = true,
-                        Message = "Backup files uploaded successfully",
+                        Message = $"Backup {result.Count} files uploaded successfully",
                     };
                 }
             };
@@ -425,7 +425,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = true,
-                            Message = "Database created successfully",
+                            Message = $"Database {targetDbName} created successfully",
                         };
                     }
                     else
@@ -434,7 +434,7 @@ namespace Maps.Backup.WorkFlowLib
                         {
                             ResultData = null,
                             IsSuccess = false,
-                            Message = $"Failed to create database, error message: {result.StandardError}",
+                            Message = $"Failed to create database {targetDbName}, error message: {result.StandardError}",
                         };
                     }
 
