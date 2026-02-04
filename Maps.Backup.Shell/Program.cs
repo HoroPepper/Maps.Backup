@@ -68,7 +68,7 @@ namespace Maps.Backup.Shell
                         if (missingKeys.Any())
                         {
                             Console.WriteLine($"\nError: Missing required configuration items for [{mainCommand}] -> {string.Join(", ", missingKeys)}");
-                            return;
+                            continue;
                         }
                         var taskMgt = workFlowCreater.Create();
                         taskMgt.ExecuteAllTasks(null, new TaskContext()
