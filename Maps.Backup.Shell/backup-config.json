@@ -1,11 +1,3 @@
 {
-  "backUpDir": "\\\\192.168.1.251\\MAPs開発\\28.問合せ調査\\調査資料\\QA113531",
-  "localSaveDir": "F:\\zhengqiwen\\QASource\\QA113531",
-  "dbFileSaveDir": "\\zhengqiwen\\SSHTest",
-  "sshIP": "192.168.1.183",
-  "sshUName": "dbadmin",
-  "sshPwd": "emdbadmin",
-  "targetDbName": "ShellTest",
-  "dbUName": "postgres",
-  "dbPwd": "root"
+
 }
