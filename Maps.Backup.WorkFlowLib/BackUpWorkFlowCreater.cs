@@ -44,7 +44,7 @@ namespace Maps.Backup.WorkFlowLib
                 ContextKeydbIP,
                 ContextKeySqlPath,
                 ContextKeyBatTempDir,
-                ContextDevKSchema,
+                ContextDevCustomerSeq,
             };
             if(_isEmailNotify)
             {
@@ -71,7 +71,7 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeySmtpPwd = "smtpPwd";         
         public readonly string ContextKeyRecvEmails = "recvEmails";    
         public readonly string ContextKeyEmailSubject = "emailSubject";
-        public readonly string ContextDevKSchema = "devKSchema";
+        public readonly string ContextDevCustomerSeq = "devCustomerSeq";
 
         public List<string> RequiredKeys { get; set; } = new List<string>();
 
@@ -380,7 +380,7 @@ namespace Maps.Backup.WorkFlowLib
                     string dbIP = context.ContextDic[ContextKeydbIP];
                     string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     string tempDir = context.ContextDic[ContextKeyBatTempDir];
-                    string devKSchema = context.ContextDic[ContextDevKSchema];
+                    string devCustomerSeq = context.ContextDic[ContextDevCustomerSeq];
                     IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, tempDir, "");
                     IBackupService backupService = new PGBackupService(shellClient);
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
@@ -406,7 +406,7 @@ namespace Maps.Backup.WorkFlowLib
                                 string schemaSql = $@"SELECT schema_name 
                                    FROM information_schema.schemata 
                                    WHERE catalog_name = (SELECT current_database())
-                                    AND schema_name = '{devKSchema}'
+                                    AND schema_name = 'k{devCustomerSeq}'
                                    ORDER BY schema_name;";
                                 var qResult = conn.Query<string>(schemaSql).ToList();
                                 if (qResult != null && qResult.Count > 0)
@@ -418,7 +418,7 @@ namespace Maps.Backup.WorkFlowLib
                                     Thread.Sleep(5000);
                                 }
                             }
-                            string dropSchemaSql = $"DROP SCHEMA {devKSchema} CASCADE;";
+                            string dropSchemaSql = $"DROP SCHEMA k{devCustomerSeq} CASCADE;";
                             conn.Execute(dropSchemaSql);
                         }
                     }, cancellationToken);
@@ -534,7 +534,7 @@ namespace Maps.Backup.WorkFlowLib
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
-                    string devKSchema = context.ContextDic[ContextDevKSchema];
+                    string devCustomerSeq = context.ContextDic[ContextDevCustomerSeq];
                     string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
                     string schemaSql = @"SELECT schema_name 
                            FROM information_schema.schemata 
@@ -550,7 +550,7 @@ namespace Maps.Backup.WorkFlowLib
                             schema_nameList.AddRange(qResult);
                         }
                     }
-                    var targetKSchema = schema_nameList.FirstOrDefault(x => x.StartsWith("k") && x != devKSchema);
+                    var targetKSchema = schema_nameList.FirstOrDefault(x => x.StartsWith("k") && x.Substring(1) != devCustomerSeq);
                     if (targetKSchema == null)
                     {
                         return new TaskNodeResult()
