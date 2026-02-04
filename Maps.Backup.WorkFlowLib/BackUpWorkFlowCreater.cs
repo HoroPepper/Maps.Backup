@@ -38,6 +38,7 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeydbPwd = "dbPwd";
         public readonly string ContextKeydbIP = "dbIP";
         public readonly string ContextKeySqlPath = "sqlPath";
+        public readonly string ContextKeyBatTempDir = "batTempDir";
 
         public TaskFlow Create()
         {
@@ -275,7 +276,8 @@ namespace Maps.Backup.WorkFlowLib
                         string ssPwd = context.ContextDic[ContextKeySshPwd];
                         string dbUName = context.ContextDic[ContextKeyDbUName];
                         string dbPwd = context.ContextDic[ContextKeydbPwd];
-                        IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
+                        string tempDir = context.ContextDic[ContextKeyBatTempDir];
+                        IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, tempDir, "");
                         IBackupService backupService = new PGBackupService(shellClient);
                         foreach (var file in files)
                         {
@@ -330,7 +332,8 @@ namespace Maps.Backup.WorkFlowLib
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
                     string dbIP = context.ContextDic[ContextKeydbIP];
                     string connStr = $"Host={dbIP};Port=5432;Database={targetDbName};Username={dbUName};Password={dbPwd};";
-                    IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
+                    string tempDir = context.ContextDic[ContextKeyBatTempDir];
+                    IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, tempDir, "");
                     IBackupService backupService = new PGBackupService(shellClient);
                     IFileService fileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
                     List<IFile> files = fileService.FindFile(new FileSearchParam()
@@ -416,7 +419,8 @@ namespace Maps.Backup.WorkFlowLib
                     string devBackup = context.ContextDic[ContextKeyDevBackup];
                     string dbUName = context.ContextDic[ContextKeyDbUName];
                     string dbPwd = context.ContextDic[ContextKeydbPwd];
-                    IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, "", "");
+                    string tempDir = context.ContextDic[ContextKeyBatTempDir];
+                    IShellClient shellClient = new RemotePGBatShellClient(sshIP, 22, ssUName, ssPwd, dbUName, dbPwd, tempDir, "");
                     var result = shellClient.Execute($@"set PGPASSWORD={dbPwd}
                     createdb -h localhost -p 5432 -U {dbUName} -w {targetDbName} ");
                     if (result.IsSuccess || result.StandardError.Contains("already exists"))
