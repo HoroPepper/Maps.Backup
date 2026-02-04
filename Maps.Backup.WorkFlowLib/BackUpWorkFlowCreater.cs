@@ -569,7 +569,7 @@ namespace Maps.Backup.WorkFlowLib
                             {
                                 ResultData = null,
                                 IsSuccess = true,
-                                Message = "Fields updated successfully",
+                                Message = $"Fields updated successfully, Count:{qResult}",
                             };
                         }
                         else
