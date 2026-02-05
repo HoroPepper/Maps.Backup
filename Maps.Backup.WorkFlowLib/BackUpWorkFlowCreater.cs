@@ -314,7 +314,7 @@ namespace Maps.Backup.WorkFlowLib
                             Message = "Upstream task failed",
                         };
                     }
-                    if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files)
+                    if (context.NodeResultList.TryGetValue("backup-upload", out TaskNodeResult nodeResult) && nodeResult?.ResultData is List<IFile> files && files.Any())
                     {
                         string dbFileSaveDir = context.ContextDic[ContextKeyDbFileSaveDir];
                         string targetDbName = context.ContextDic[ContextKeyTargetDbName];
@@ -338,13 +338,15 @@ namespace Maps.Backup.WorkFlowLib
                             Message = "Backup files restored successfully",
                         };
                     }
-
-                    return new TaskNodeResult()
+                    else
                     {
-                        ResultData = null,
-                        IsSuccess = false,
-                        Message = "Failed to restore backup files",
-                    };
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "Failed to find restore backup files",
+                        };
+                    }
 
                 }
             };
@@ -460,6 +462,15 @@ namespace Maps.Backup.WorkFlowLib
                 TaskType = "db-create",
                 DelegateFunc = (context) =>
                 {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "Upstream task failed",
+                        };
+                    }
                     string targetDbName = context.ContextDic[ContextKeyTargetDbName];
                     string sshIP = context.ContextDic[ContextKeySshIP];
                     string ssUName = context.ContextDic[ContextKeySshUName];
