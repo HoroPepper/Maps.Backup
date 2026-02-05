@@ -72,6 +72,7 @@ namespace Maps.Backup.WorkFlowLib
         public readonly string ContextKeyRecvEmails = "recvEmails";    
         public readonly string ContextKeyEmailSubject = "emailSubject";
         public readonly string ContextDevCustomerSeq = "devCustomerSeq";
+        public readonly string ContextSucceedNotifyEmails = "succeedNotifyEmails";
 
         public List<string> RequiredKeys { get; set; } = new List<string>();
 
@@ -630,13 +631,16 @@ namespace Maps.Backup.WorkFlowLib
                         string emailSubject = context.ContextDic.ContainsKey(ContextKeyEmailSubject)
                             ? context.ContextDic[ContextKeyEmailSubject]
                             : $"【备份工作流】执行摘要 - {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                        string succeedNotifyEmails = context.ContextDic.ContainsKey(ContextSucceedNotifyEmails) ?
+                            context.ContextDic[ContextSucceedNotifyEmails] : string.Empty;
 
                         // 2. 统计所有任务节点执行结果
                         int totalTask = context.NodeResultList.Count;
                         int successTask = context.NodeResultList.Values.Count(r => r.IsSuccess);
                         int failTask = totalTask - successTask;
+                        bool isAllSuccess = failTask == 0;
                         // 工作流整体状态：所有任务成功则为成功，否则失败
-                        string workflowStatus = failTask == 0 ? "✅ 执行成功" : "❌ 执行失败（部分节点出错）";
+                        string workflowStatus = isAllSuccess ? "✅ 执行成功" : "❌ 执行失败（部分节点出错）";
 
                         // 3. 构建详细的任务执行明细（HTML格式，排版清晰）
                         StringBuilder taskDetailBuilder = new StringBuilder();
@@ -662,10 +666,15 @@ namespace Maps.Backup.WorkFlowLib
                         <h4>任务执行明细：</h4>
                         {taskDetailBuilder.ToString()}
                         <p style='margin-top:20px;color:#666;'>此邮件由系统自动发送，无需回复</p>";
-
+                        List<string> toAddresses = new List<string>();
+                        toAddresses.AddRange(GetEmailsFromStr(recvEmails));
+                        if(isAllSuccess)
+                        {
+                            toAddresses.AddRange(GetEmailsFromStr(succeedNotifyEmails));
+                        }
                         // 5. 发送邮件
                         var sendSuccess = SendWorkflowSummaryEmail(
-                            smtpServer, smtpPort, smtpUser, smtpPwd, recvEmails, emailSubject, emailBody);
+                            smtpServer, smtpPort, smtpUser, smtpPwd, toAddresses, emailSubject, emailBody);
 
                         // 6. 返回任务节点结果
                         return new TaskNodeResult()
@@ -689,22 +698,28 @@ namespace Maps.Backup.WorkFlowLib
             return emailNode;
         }
 
-        private bool SendWorkflowSummaryEmail(
-        string smtpServer, int smtpPort, string smtpUser, string smtpPwd,
-        string recvEmails, string subject, string body)
+        private List<string> GetEmailsFromStr(string recvEmails)
         {
+            List<string> toAddresses = new List<string>();
             if (string.IsNullOrWhiteSpace(recvEmails))
             {
-                return false;
+                return toAddresses;
             }
-            var toAddresses = recvEmails.Split(',', ';')
+
+            toAddresses.AddRange(recvEmails.Split(',', ';')
                 .Select(x => x.Trim())
-                .Where(x => !string.IsNullOrWhiteSpace(x));
-            if (!toAddresses.Any())
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+            return toAddresses;
+        }
+
+        private bool SendWorkflowSummaryEmail(
+        string smtpServer, int smtpPort, string smtpUser, string smtpPwd,
+        List<string> toAddresses, string subject, string body)
+        {
+            if (toAddresses == null || !toAddresses.Any())
             {
                 return false;
             }
-
 
             var mailMessage = new MailMessage
             {
