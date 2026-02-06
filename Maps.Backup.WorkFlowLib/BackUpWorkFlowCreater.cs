@@ -642,14 +642,50 @@ namespace Maps.Backup.WorkFlowLib
                         string executeSql = fileContent.Replace("{customerSeq}", targetCustomerSeq);
                         executeSql = executeSql.Replace("{dbName}", targetDbName);
                         executeSql = executeSql.Replace("{devCustomerSeq}", devCustomerSeq);
-                        var qResult = conn.Execute(executeSql, commandTimeout: 0);
-                        if (qResult >= 0)
+                        List<string> splitedSql = executeSql.Split(';').ToList();
+                        int updateCount = 0;
+                        List<string> errorMsgList = new List<string>();
+                        foreach (var sql in splitedSql)
                         {
+                            if(string.IsNullOrWhiteSpace(sql))
+                            {
+                                continue;
+                            }
+                            try
+                            {
+                                var qResult = conn.Execute(sql, commandTimeout: 0);
+                                updateCount += qResult;
+                            }
+                            catch (PostgresException pgEx)
+                            {
+                                string postgresErrorCode_TableNotFound = "42P01"; 
+                                if (pgEx.SqlState == postgresErrorCode_TableNotFound)
+                                {
+                                    errorMsgList.Add(pgEx.Message);
+                                }
+                                else
+                                {
+                                    throw pgEx;
+                                }
+                            }
+                            catch(Exception ex)
+                            {
+                                int t = 1;
+                            }
+                        }
+                           
+                        if (updateCount > 0)
+                        {
+                            string message = $"Fields updated successfully, Count:{updateCount}";
+                            if(errorMsgList.Any())
+                            {
+                                message += $", but some errors occurred: {string.Join(" | ", errorMsgList)}";
+                            }
                             return new TaskNodeResult()
                             {
                                 ResultData = null,
                                 IsSuccess = true,
-                                Message = $"Fields updated successfully, Count:{qResult}",
+                                Message = message,
                             };
                         }
                         else
@@ -658,7 +694,7 @@ namespace Maps.Backup.WorkFlowLib
                             {
                                 ResultData = null,
                                 IsSuccess = false,
-                                Message = "Field update failed",
+                                Message = $"Field update failed : {string.Join(" | ", errorMsgList)}",
                             };
                         }
 
