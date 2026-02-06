@@ -118,38 +118,42 @@ namespace Maps.Backup.WorkFlowLib
         }
 
 
-        private List<IFile> DownloadBackUpFiles(IFileService fileService, string backUpDir, string localSaveDir)
+        private List<IFile> DownloadBackUpFiles(IFileService fileService, string backUpFilePath, string localSaveDir)
         {
             List<IFile> targetBackUpFiles = new List<IFile>();
-            var fileByFullPath = fileService.FindFile(new FileSearchParam()
+            var backupFile = fileService.FindFile(new FileSearchParam()
             {
-                FullPath = backUpDir,
+                FullPath = backUpFilePath,
             }).FirstOrDefault();
-            if(fileByFullPath != null && !fileByFullPath.IsDirectory)
+            if (backupFile != null)
             {
-                targetBackUpFiles.Add(fileByFullPath);
+                if (!backupFile.IsDirectory)
+                {
+                    targetBackUpFiles.Add(backupFile);
+                }
+                else
+                {
+                    targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+                    {
+                        RootPath = backupFile.Path,
+                        FileType = ".dump",
+                        IsRecursive = true,
+                    }));
+                    targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+                    {
+                        RootPath = backupFile.Path,
+                        FileType = ".zip",
+                        IsRecursive = true,
+                    }));
+                    targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+                    {
+                        RootPath = backupFile.Path,
+                        FileType = ".backup",
+                        IsRecursive = true,
+                    }));
+                }
             }
-            else
-            {
-                targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
-                {
-                    RootPath = backUpDir,
-                    FileType = ".dump",
-                    IsRecursive = true,
-                }));
-                targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
-                {
-                    RootPath = backUpDir,
-                    FileType = ".zip",
-                    IsRecursive = true,
-                }));
-                targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
-                {
-                    RootPath = backUpDir,
-                    FileType = ".backup",
-                    IsRecursive = true,
-                }));
-            }
+            
             List<IFile> downLoadFiles = new List<IFile>();
 
             foreach (var file in targetBackUpFiles)
@@ -182,6 +186,16 @@ namespace Maps.Backup.WorkFlowLib
                     string backUpDir = context.ContextDic[ContextKeyBackUpDir];
                     string localSaveDir = context.ContextDic[ContextKeyLocalSaveDir];
                     var downloadFiles = DownloadBackUpFiles(backUpFileService, backUpDir, localSaveDir);
+                    if(downloadFiles == null || !downloadFiles.Any())
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = $"No found files to download",
+                        };
+                    }
+
                     return new TaskNodeResult()
                     {
                         ResultData = downloadFiles,
