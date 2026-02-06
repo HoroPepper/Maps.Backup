@@ -668,10 +668,6 @@ namespace Maps.Backup.WorkFlowLib
                                     throw pgEx;
                                 }
                             }
-                            catch(Exception ex)
-                            {
-                                int t = 1;
-                            }
                         }
                            
                         if (updateCount > 0)
