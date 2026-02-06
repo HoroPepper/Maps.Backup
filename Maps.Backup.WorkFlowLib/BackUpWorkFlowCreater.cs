@@ -90,6 +90,7 @@ namespace Maps.Backup.WorkFlowLib
 
             taskFlow.AddTaskNode(CreateBackupDownTaskNode());
             taskFlow.AddTaskNode(CreateUnZipTaskNode());
+            taskFlow.AddTaskNode(CreateSearchBackFilesTaskNode());
             taskFlow.AddTaskNode(CreateBackupUpTaskNode());
             taskFlow.AddTaskNode(CreateDBCreateTaskNode());
             taskFlow.AddTaskNode(CreateBackupRestoreTaskNode());
@@ -120,29 +121,35 @@ namespace Maps.Backup.WorkFlowLib
         private List<IFile> DownloadBackUpFiles(IFileService fileService, string backUpDir, string localSaveDir)
         {
             List<IFile> targetBackUpFiles = new List<IFile>();
-            targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
-            {
-                RootPath = backUpDir,
-                FileType = ".dump",
-                IsRecursive = true,
-            }));
-            targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
-            {
-                RootPath = backUpDir,
-                FileType = ".zip",
-                IsRecursive = true,
-            }));
-            targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
-            {
-                RootPath = backUpDir,
-                FileType = ".backup",
-                IsRecursive = true,
-            }));
-            targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+            var fileByFullPath = fileService.FindFile(new FileSearchParam()
             {
                 FullPath = backUpDir,
-            }).Where(x => !x.IsDirectory));
-
+            }).FirstOrDefault();
+            if(fileByFullPath != null && !fileByFullPath.IsDirectory)
+            {
+                targetBackUpFiles.Add(fileByFullPath);
+            }
+            else
+            {
+                targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+                {
+                    RootPath = backUpDir,
+                    FileType = ".dump",
+                    IsRecursive = true,
+                }));
+                targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+                {
+                    RootPath = backUpDir,
+                    FileType = ".zip",
+                    IsRecursive = true,
+                }));
+                targetBackUpFiles.AddRange(fileService.FindFile(new FileSearchParam()
+                {
+                    RootPath = backUpDir,
+                    FileType = ".backup",
+                    IsRecursive = true,
+                }));
+            }
             List<IFile> downLoadFiles = new List<IFile>();
 
             foreach (var file in targetBackUpFiles)
@@ -240,6 +247,47 @@ namespace Maps.Backup.WorkFlowLib
             return unZipNode;
         }
 
+        private IWorkTaskNode CreateSearchBackFilesTaskNode()
+        {
+            IWorkTaskNode unZipNode = new DelegateTaskNode()
+            {
+                TaskId = "backup-search",
+                TaskName = "Search Backup Files",
+                TaskType = "search",
+                DelegateFunc = (context) =>
+                {
+                    if (context.LastTaskResult != null && !context.LastTaskResult.IsSuccess)
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = null,
+                            IsSuccess = false,
+                            Message = "Upstream task failed",
+                        };
+                    }
+                    List<IFile> backupFiles = new List<IFile>();
+                    IFileService localFileService = new LocalFileService();
+                    if (context.NodeResultList.TryGetValue("backup-down", out TaskNodeResult downResult) && downResult.ResultData is List<IFile> downFiles)
+                    {
+                        backupFiles.AddRange(downFiles.Where(x => x.FileType == ".dump" || x.FileType == ".backup"));
+                    }
+                    if (context.NodeResultList.TryGetValue("backup-unzip", out TaskNodeResult unzipResult) && unzipResult.ResultData is List<IFile> unzipFiles)
+                    {
+                        backupFiles.AddRange(unzipFiles.Where(x => x.FileType == ".dump" || x.FileType == ".backup"));
+                    }
+
+                    return new TaskNodeResult()
+                    {
+                        ResultData = backupFiles,
+                        IsSuccess = true,
+                        Message = "Files from previous download node are missing",
+                    };
+                }
+            };
+
+            return unZipNode;
+        }
+
 
         private IWorkTaskNode CreateBackupUpTaskNode()
         {
@@ -267,24 +315,25 @@ namespace Maps.Backup.WorkFlowLib
                     List<IFile> upLoadFiles = new List<IFile>();
                     IFileService localFileService = new LocalFileService();
                     IFileService dbFileService = new SSHFileService(sshIP, 22, ssUName, ssPwd);
-                    upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
+                    if (context.NodeResultList.TryGetValue("backup-search", out TaskNodeResult downResult) &&  downResult.ResultData is List<IFile> backFiles)
                     {
-                        RootPath = localSaveDir,
-                        FileType = ".dump",
-                        IsRecursive = true,
-                    }));
-                    upLoadFiles.AddRange(localFileService.FindFile(new FileSearchParam()
-                    {
-                        RootPath = localSaveDir,
-                        FileType = ".backup",
-                        IsRecursive = true,
-                    }));
-
+                        upLoadFiles.AddRange(backFiles);
+                    }
                     List<IFile> result = new List<IFile>();
                     foreach (var file in upLoadFiles)
                     {
                         result.Add(dbFileService.Upload(file, new SFTPFile(dbFileSaveDir, false)));
                     }
+                    if(!result.Any())
+                    {
+                        return new TaskNodeResult()
+                        {
+                            ResultData = result,
+                            IsSuccess = false,
+                            Message = $"No Files to Upload",
+                        };
+                    }
+
                     return new TaskNodeResult()
                     {
                         ResultData = result,
