@@ -294,7 +294,7 @@ namespace Maps.Backup.WorkFlowLib
                     {
                         ResultData = backupFiles,
                         IsSuccess = true,
-                        Message = "Files from previous download node are missing",
+                        Message = "Backup files sum search successfully",
                     };
                 }
             };
