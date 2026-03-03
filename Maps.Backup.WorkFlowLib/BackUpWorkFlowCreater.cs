@@ -638,38 +638,41 @@ namespace Maps.Backup.WorkFlowLib
                     string targetCustomerSeq = targetKSchema.Substring(1);
                     using (var conn = new NpgsqlConnection(connStr))
                     {
-                        conn.Open();
                         string executeSql = fileContent.Replace("{customerSeq}", targetCustomerSeq);
                         executeSql = executeSql.Replace("{dbName}", targetDbName);
                         executeSql = executeSql.Replace("{devCustomerSeq}", devCustomerSeq);
                         List<string> splitedSql = executeSql.Split(';').ToList();
                         int updateCount = 0;
                         List<string> errorMsgList = new List<string>();
-                        foreach (var sql in splitedSql)
+                        conn.Open();
+                        using (var transaction = conn.BeginTransaction())
                         {
-                            if(string.IsNullOrWhiteSpace(sql))
+                            foreach (var sql in splitedSql)
                             {
-                                continue;
-                            }
-                            try
-                            {
-                                var qResult = conn.Execute(sql, commandTimeout: 0);
-                                updateCount += qResult;
-                            }
-                            catch (PostgresException pgEx)
-                            {
-                                string postgresErrorCode_TableNotFound = "42P01"; 
-                                if (pgEx.SqlState == postgresErrorCode_TableNotFound)
+                                if (string.IsNullOrWhiteSpace(sql))
                                 {
-                                    errorMsgList.Add(pgEx.Message);
+                                    continue;
                                 }
-                                else
+                                try
                                 {
-                                    throw pgEx;
+                                    var qResult = conn.Execute(sql, commandTimeout: 0, transaction:transaction);
+                                    updateCount += qResult;
+                                }
+                                catch (PostgresException pgEx)
+                                {
+                                    string postgresErrorCode_TableNotFound = "42P01";
+                                    if (pgEx.SqlState == postgresErrorCode_TableNotFound)
+                                    {
+                                        errorMsgList.Add(pgEx.Message);
+                                    }
+                                    else
+                                    {
+                                        throw pgEx;
+                                    }
                                 }
                             }
-                        }
-                           
+                            transaction.Commit();
+                        }       
                         if (updateCount > 0)
                         {
                             string message = $"Fields updated successfully, Count:{updateCount}";
