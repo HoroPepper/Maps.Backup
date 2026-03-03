@@ -647,14 +647,18 @@ namespace Maps.Backup.WorkFlowLib
                         conn.Open();
                         using (var transaction = conn.BeginTransaction())
                         {
+                            int savepointIndex = 0;
                             foreach (var sql in splitedSql)
                             {
                                 if (string.IsNullOrWhiteSpace(sql))
                                 {
                                     continue;
                                 }
+                                savepointIndex++;
+                                string savepointName = $"sp_{savepointIndex}";
                                 try
                                 {
+                                    transaction.Save(savepointName);
                                     var qResult = conn.Execute(sql, commandTimeout: 0, transaction:transaction);
                                     updateCount += qResult;
                                 }
@@ -663,6 +667,7 @@ namespace Maps.Backup.WorkFlowLib
                                     string postgresErrorCode_TableNotFound = "42P01";
                                     if (pgEx.SqlState == postgresErrorCode_TableNotFound)
                                     {
+                                        transaction.Rollback(savepointName);
                                         errorMsgList.Add(pgEx.Message);
                                     }
                                     else
