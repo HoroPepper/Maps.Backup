@@ -3,6 +3,7 @@ using Maps.Backup.WebAPI.Dtos.Res;
 using Maps.Backup.WebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -27,13 +28,14 @@ namespace Maps.Backup.WebAPI.Controllers
         }
 
         [HttpPut("restore/stream")]
-        public async IAsyncEnumerable<RestoreProgressRes> RestoreWithStream(RestoreReq restoreReq, CancellationToken cancellationToken)
+        [Produces("text/event-stream")]
+        public async IAsyncEnumerable<RestoreProgressRes> RestoreWithStream([FromBody] RestoreReq restoreReq, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            int totalSteps = 10;
-            for (int i = 0; i < totalSteps; i++)
+            await foreach (var progress in _backupService.RestoreWithStream(restoreReq, cancellationToken)
+                                .WithCancellation(cancellationToken)
+                                .ConfigureAwait(false))
             {
-                await Task.Delay(1000);
-                yield return new RestoreProgressRes { Progress = (i + 1) * 20 }; 
+                yield return progress;
             }
         }
 
