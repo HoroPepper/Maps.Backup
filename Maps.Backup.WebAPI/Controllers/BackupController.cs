@@ -1,8 +1,10 @@
 ﻿using Maps.Backup.WebAPI.Dtos.Req;
 using Maps.Backup.WebAPI.Dtos.Res;
+using Maps.Backup.WebAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace Maps.Backup.WebAPI.Controllers
 {
@@ -10,14 +12,18 @@ namespace Maps.Backup.WebAPI.Controllers
     [Route("[controller]")]
     public class BackupController : ControllerBase
     {
-        [HttpPut(Name = "restore")]
-        public RestoreRes Restore(RestoreReq restoreReq)
+
+        private readonly IBackupService _backupService;
+
+        public BackupController(IBackupService backupService) 
         {
-            return new RestoreRes
-            {
-                IsSuccess = true,
-                DBName = "TestDB"
-            };
+            _backupService = backupService;
+        }
+
+        [HttpPut(Name = "restore")]
+        public async Task<RestoreRes> Restore(RestoreReq restoreReq)
+        {
+            return await _backupService.Restore(restoreReq);
         }
 
         [HttpPut("restore/stream")]

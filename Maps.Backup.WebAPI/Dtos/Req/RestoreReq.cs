@@ -7,5 +7,7 @@
         public string QANO { get; set; }
 
         public string TicketNO { get; set; }
+
+        public string VersionNO { get; set; }
     }
 }

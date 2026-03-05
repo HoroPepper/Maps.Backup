@@ -3,6 +3,9 @@
     public class RestoreRes
     {
         public bool IsSuccess { get; set; }
+
         public string DBName { get; set; }
+
+        public string Message { get; set; }
     }
 }

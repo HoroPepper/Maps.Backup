@@ -7,7 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="backup-config.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="backup-config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Maps.Backup.Core\Maps.Backup.Core.csproj" />
+    <ProjectReference Include="..\Maps.Backup.WorkFlowLib\Maps.Backup.WorkFlowLib.csproj" />
   </ItemGroup>
 
 </Project>
