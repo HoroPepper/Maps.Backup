@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maps.Backup.WorkFlowLib", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maps.Backup.WorkFlowEditor", "Maps.Backup.WorkFlowEditor\Maps.Backup.WorkFlowEditor.csproj", "{741B4B24-B46A-4F43-9B8B-2D696A259EA4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maps.Backup.WebAPI", "Maps.Backup.WebAPI\Maps.Backup.WebAPI.csproj", "{6217EC0A-C858-4F24-8F2F-A95C40ACB45B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{741B4B24-B46A-4F43-9B8B-2D696A259EA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{741B4B24-B46A-4F43-9B8B-2D696A259EA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{741B4B24-B46A-4F43-9B8B-2D696A259EA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6217EC0A-C858-4F24-8F2F-A95C40ACB45B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6217EC0A-C858-4F24-8F2F-A95C40ACB45B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6217EC0A-C858-4F24-8F2F-A95C40ACB45B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6217EC0A-C858-4F24-8F2F-A95C40ACB45B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
